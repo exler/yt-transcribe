@@ -1,40 +1,34 @@
 package fetch
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
-// VideoDownloader manages the downloading of YouTube videos
-type VideoDownloader struct {
+// YouTubeDownloader manages the downloading of YouTube videos
+type YouTubeDownloader struct {
 	OutputDir string
 }
 
-// NewVideoDownloader creates a new video downloader instance
-func NewVideoDownloader(outputDir string) (*VideoDownloader, error) {
-	// Create output directory if it doesn't exist
-	if outputDir == "" {
-		outputDir = "downloads"
-	}
-
+// NewYouTubeDownloader creates a new video downloader instance
+func NewYouTubeDownloader(outputDir string) (*YouTubeDownloader, error) {
+	// Get absolute path for output directory
 	absPath, err := filepath.Abs(outputDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
-	if err := os.MkdirAll(absPath, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create output directory: %w", err)
-	}
-
-	return &VideoDownloader{
+	return &YouTubeDownloader{
 		OutputDir: absPath,
 	}, nil
 }
 
 // CheckYTDLP verifies that yt-dlp is installed
-func (d *VideoDownloader) CheckYTDLP() error {
+func (d *YouTubeDownloader) CheckYTDLP() error {
 	cmd := exec.Command("yt-dlp", "--version")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("yt-dlp not found: %w", err)
@@ -42,8 +36,8 @@ func (d *VideoDownloader) CheckYTDLP() error {
 	return nil
 }
 
-// DownloadVideo downloads a YouTube video using yt-dlp
-func (d *VideoDownloader) DownloadVideo(videoURL string, options ...string) (string, error) {
+// DownloadAudio downloads a YouTube video (converted to audio format) using yt-dlp
+func (d *YouTubeDownloader) DownloadAudio(videoURL string, options ...string) (string, error) {
 	if err := d.CheckYTDLP(); err != nil {
 		return "", err
 	}
@@ -56,7 +50,9 @@ func (d *VideoDownloader) DownloadVideo(videoURL string, options ...string) (str
 		"--format", "bestaudio/best",
 		"--output", outputTemplate,
 		"--no-playlist",
+		"--no-simulate",
 		"--quiet",
+		"--print", "filename",
 	}
 
 	// Add any additional options
@@ -67,12 +63,20 @@ func (d *VideoDownloader) DownloadVideo(videoURL string, options ...string) (str
 
 	// Execute yt-dlp command
 	cmd := exec.Command("yt-dlp", args...)
+	// Capture stdout (filename) and send stderr to os.Stderr for errors
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to download video: %w", err)
 	}
 
-	// Return the directory where the video was saved
-	return d.OutputDir, nil
+	filename := strings.TrimSpace(stdout.String())
+	if filename == "" {
+		return "", fmt.Errorf("could not determine output filename")
+	}
+
+	// Return the full path to the downloaded file
+	return filename, nil
 }

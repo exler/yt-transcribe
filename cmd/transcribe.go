@@ -16,18 +16,6 @@ var (
 		Usage: "Transcribe a YouTube video",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:    "output-dir",
-				Aliases: []string{"o"},
-				Usage:   "Directory where downloaded videos will be stored",
-				Value:   "downloads",
-			},
-			&cli.StringFlag{
-				Name:    "format",
-				Aliases: []string{"f"},
-				Usage:   "Video format to download (default: bestaudio/best)",
-				Value:   "bestaudio/best",
-			},
-			&cli.StringFlag{
 				Name:    "api-key",
 				Aliases: []string{"k"},
 				Usage:   "OpenAI API key (can also be set via OPENAI_API_KEY env variable)",
@@ -45,9 +33,6 @@ var (
 				return fmt.Errorf("video URL is required")
 			}
 
-			outputDir := cmd.String("output-dir")
-			format := cmd.String("format")
-
 			// Check for API key in environment variable if not provided via flag
 			apiKey := cmd.String("api-key")
 			if apiKey == "" {
@@ -57,9 +42,24 @@ var (
 			model := cmd.String("model")
 
 			fmt.Printf("Downloading video: %s\n", videoURL)
-			fmt.Printf("Output directory: %s\n", outputDir)
 
-			downloader, err := fetch.NewVideoDownloader(outputDir)
+			// Create temporary directory
+			tempDir, err := os.MkdirTemp("", "yt-transcribe-*")
+			if err != nil {
+				return fmt.Errorf("failed to create temporary directory: %w", err)
+			}
+
+			// Ensure cleanup of temp directory when we're done
+			defer func() {
+				if err := os.RemoveAll(tempDir); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: Failed to cleanup temporary files: %v\n", err)
+				}
+			}()
+
+			fmt.Printf("Using temporary directory: %s\n", tempDir)
+
+			// Initialize downloader with the temporary directory
+			downloader, err := fetch.NewYouTubeDownloader(tempDir)
 			if err != nil {
 				return fmt.Errorf("failed to initialize downloader: %w", err)
 			}
@@ -72,17 +72,9 @@ var (
 			}
 
 			fmt.Println("Downloading video...")
-			outputPath, err := downloader.DownloadVideo(videoURL, "--format", format)
+			audioOutputPath, err := downloader.DownloadAudio(videoURL)
 			if err != nil {
 				return fmt.Errorf("failed to download video: %w", err)
-			}
-
-			fmt.Printf("Video successfully downloaded to: %s\n", outputPath)
-
-			// Find the audio file in the output directory
-			audioFilePath, err := transcribe.FindAudioFile(outputPath)
-			if err != nil {
-				return fmt.Errorf("failed to find audio file: %w", err)
 			}
 
 			// Initialize the transcriber
@@ -92,7 +84,7 @@ var (
 			}
 
 			fmt.Println("Transcribing audio with OpenAI Whisper API...")
-			transcriptionText, err := whisperTranscriber.TranscribeFile(ctx, audioFilePath)
+			transcriptionText, err := whisperTranscriber.TranscribeFile(ctx, audioOutputPath)
 			if err != nil {
 				return fmt.Errorf("failed to transcribe audio: %w", err)
 			}

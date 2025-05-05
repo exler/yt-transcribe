@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -24,9 +22,8 @@ func NewWhisperTranscriber(apiKey, model string) (*WhisperTranscriber, error) {
 		return nil, errors.New("OpenAI API key is required")
 	}
 
-	// Set default model if empty
 	if model == "" {
-		model = "whisper-1"
+		return nil, errors.New("model is required")
 	}
 
 	// Create OpenAI client with API key
@@ -36,34 +33,6 @@ func NewWhisperTranscriber(apiKey, model string) (*WhisperTranscriber, error) {
 		client: &client,
 		model:  model,
 	}, nil
-}
-
-// FindAudioFile searches for audio files in the given directory
-func FindAudioFile(directory string) (string, error) {
-	files, err := os.ReadDir(directory)
-	if err != nil {
-		return "", fmt.Errorf("failed to read directory: %w", err)
-	}
-
-	// List of common audio extensions
-	audioExts := []string{".mp3", ".m4a", ".wav", ".flac", ".ogg", ".webm"}
-
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-
-		fileName := file.Name()
-		ext := strings.ToLower(filepath.Ext(fileName))
-
-		for _, audioExt := range audioExts {
-			if ext == audioExt {
-				return filepath.Join(directory, fileName), nil
-			}
-		}
-	}
-
-	return "", errors.New("no audio file found in the directory")
 }
 
 // TranscribeFile transcribes the given audio file using OpenAI's Whisper API
