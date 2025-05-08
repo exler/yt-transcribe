@@ -10,7 +10,7 @@ import (
 var cmd = &cli.Command{
 	Name:     "yt-transcribe",
 	Usage:    "Transcribe YouTube videos using AI speech recognition",
-	Commands: []*cli.Command{versionCmd, transcribeCmd},
+	Commands: []*cli.Command{versionCmd, transcribeCmd, runserverCmd},
 }
 
 func Run() error {
