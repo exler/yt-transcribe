@@ -13,6 +13,8 @@ import (
 	"github.com/exler/yt-transcribe/internal/queue"
 	"github.com/exler/yt-transcribe/internal/summarize"
 	"github.com/exler/yt-transcribe/internal/transcribe"
+	"github.com/exler/yt-transcribe/static"
+	"github.com/exler/yt-transcribe/templates"
 	"github.com/urfave/cli/v3"
 )
 
@@ -26,12 +28,14 @@ type pageData struct {
 }
 
 func renderTemplate(w http.ResponseWriter, data pageData) {
-	tmpl, err := template.ParseFiles("templates/index.html")
+	tmpl, err := template.ParseFS(templates.Files, "index.html")
 	if err != nil {
+		log.Printf("Error parsing template from FS: %v", err)
 		http.Error(w, "Template parse error", http.StatusInternalServerError)
 		return
 	}
 	if err := tmpl.ExecuteTemplate(w, "index.html", data); err != nil {
+		log.Printf("Error executing template: %v", err)
 		http.Error(w, "Template execution error", http.StatusInternalServerError)
 	}
 }
@@ -194,7 +198,8 @@ var runserverCmd = &cli.Command{
 		http.HandleFunc("/summarize", summaryHandler)
 		http.HandleFunc("/queue", queueDataHandler) // Register new queue handler
 
-		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+		// Serve static files from embedded FS
+		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(static.Files))))
 
 		go startTranscriptionWorker() // Launch the background worker
 
