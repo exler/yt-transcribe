@@ -1,0 +1,32 @@
+<html>
+<head><title>YouTube Transcription</title><link rel="stylesheet" type="text/css" href="/static/style.css"></head>
+<body>
+	<h1><a href="/">YouTube Transcription</a></h1>
+	<form method="POST" action="/">
+		<input type="text" name="youtube_url" placeholder="Enter YouTube URL" size="50">
+		<input type="submit" value="Transcribe">
+	</form>
+
+	{{if .ErrorDetail}}
+		<p style="color: red;">Error: {{.ErrorDetail}}</p>
+	{{end}}
+
+	{{if .Summary}}
+		<h2>Summary:</h2>
+		<p>{{.Summary}}</p>
+	{{end}}
+	
+	{{if .Transcript}}
+		<h2>Transcript:</h2>
+		<p>{{.Transcript}}</p>
+
+
+		{{if not .Summary}}
+			<form method="POST" action="/summarize">
+				<input type="hidden" name="text" value="{{.Transcript}}">
+				<input type="submit" value="Summarize Transcript">
+			</form>
+		{{end}}
+	{{end}}
+</body>
+</html>

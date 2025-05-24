@@ -13,37 +13,6 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// indexHTML is the HTML template for the server page.
-var indexHTML = `<html>
-<head><title>YouTube Transcription</title></head>
-<body>
-	<h1>YouTube Transcription</h1>
-	<form method="POST" action="/">
-		<input type="text" name="youtube_url" placeholder="Enter YouTube URL" size="50">
-		<input type="submit" value="Transcribe">
-	</form>
-
-	{{if .ErrorDetail}}
-		<p style="color: red;">Error: {{.ErrorDetail}}</p>
-	{{end}}
-
-	{{if .Summary}}
-		<h2>Summary:</h2>
-		<p>{{.Summary}}</p>
-	{{end}}
-	
-	{{if .Transcript}}
-		<h2>Transcript:</h2>
-		<p>{{.Transcript}}</p>
-
-		<form method="POST" action="/summarize">
-			<input type="hidden" name="text" value="{{.Transcript}}">
-			<input type="submit" value="Summarize Transcript">
-		</form>
-	{{end}}
-</body>
-</html>`
-
 // pageData holds the data for the template.
 type pageData struct {
 	Transcript  string
@@ -52,12 +21,12 @@ type pageData struct {
 }
 
 func renderTemplate(w http.ResponseWriter, data pageData) {
-	tmpl, err := template.New("index").Parse(indexHTML)
+	tmpl, err := template.ParseFiles("templates/index.html")
 	if err != nil {
 		http.Error(w, "Template parse error", http.StatusInternalServerError)
 		return
 	}
-	if err := tmpl.Execute(w, data); err != nil {
+	if err := tmpl.ExecuteTemplate(w, "index.html", data); err != nil {
 		http.Error(w, "Template execution error", http.StatusInternalServerError)
 	}
 }
@@ -178,6 +147,8 @@ var runserverCmd = &cli.Command{
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		http.HandleFunc("/", mainHandler)
 		http.HandleFunc("/summarize", summaryHandler)
+
+		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 		port := "8000"
 		log.Printf("Running server on http://localhost:%s", port)
