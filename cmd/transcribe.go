@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/exler/yt-transcribe/fetch"
-	"github.com/exler/yt-transcribe/transcribe"
+	"github.com/exler/yt-transcribe/internal/fetch"
+	"github.com/exler/yt-transcribe/internal/transcribe"
 	"github.com/urfave/cli/v3"
 )
 
