@@ -72,7 +72,7 @@ var (
 			}
 
 			fmt.Println("Downloading video...")
-			audioOutputPath, err := downloader.DownloadAudio(videoURL)
+			downloadedMetadata, err := downloader.DownloadAudio(videoURL) // Renamed variable
 			if err != nil {
 				return fmt.Errorf("failed to download video: %w", err)
 			}
@@ -84,7 +84,8 @@ var (
 			}
 
 			fmt.Println("Transcribing audio with OpenAI Whisper API...")
-			transcriptionText, err := whisperTranscriber.TranscribeFile(ctx, audioOutputPath)
+			// Use the AudioFilePath field from the downloadedMetadata struct
+			transcriptionText, err := whisperTranscriber.TranscribeFile(ctx, downloadedMetadata.AudioFilePath)
 			if err != nil {
 				return fmt.Errorf("failed to transcribe audio: %w", err)
 			}
