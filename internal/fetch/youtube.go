@@ -46,6 +46,15 @@ func (d *YouTubeDownloader) CheckYTDLP() error {
 	return nil
 }
 
+func formatDuration(duration string) string {
+	// If duration is less than a minute, format it as "0:<secs>"
+	if strings.Count(duration, ":") == 0 {
+		return fmt.Sprintf("0:%s", duration)
+	}
+
+	return duration
+}
+
 // DownloadAudio downloads a YouTube video (converted to audio format) using yt-dlp
 // and returns its metadata.
 func (d *YouTubeDownloader) DownloadAudio(videoURL string, options ...string) (VideoMetadata, error) {
@@ -97,7 +106,7 @@ func (d *YouTubeDownloader) DownloadAudio(videoURL string, options ...string) (V
 
 	metadata.VideoID = parts[0]
 	metadata.Title = parts[1]
-	metadata.Duration = parts[2]
+	metadata.Duration = formatDuration(parts[2])
 	metadata.UploadDate = parts[3]
 	metadata.AudioFilePath = audioFilePath
 
@@ -149,7 +158,7 @@ func (d *YouTubeDownloader) GetVideoMetadata(videoURL string) (VideoMetadata, er
 
 	metadata.VideoID = parts[0]
 	metadata.Title = parts[1]
-	metadata.Duration = parts[2]
+	metadata.Duration = formatDuration(parts[2])
 	metadata.UploadDate = parts[3]
 	metadata.AudioFilePath = ""
 
