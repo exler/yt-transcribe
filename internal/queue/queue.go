@@ -16,6 +16,7 @@ type VideoInfo struct {
 	Status        string // "pending", "fetching_metadata", "metadata_failed", "processing", "downloading", "download_failed", "transcribing", "transcription_failed", "completed", "failed"
 	AudioFilePath string
 	Transcript    string
+	Summary       string
 	Error         string
 }
 

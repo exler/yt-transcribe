@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/exler/yt-transcribe/internal/fetch"
@@ -201,6 +202,14 @@ var runserverCmd = &cli.Command{
 		// Serve static files from embedded FS
 		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(static.Files))))
 
+		http.HandleFunc("/entry/", func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasSuffix(r.URL.Path, "/summarize") {
+				entrySummarizeHandler(w, r)
+			} else {
+				entryHandler(w, r)
+			}
+		})
+
 		go startTranscriptionWorker() // Launch the background worker
 
 		port := "8000"
@@ -209,6 +218,84 @@ var runserverCmd = &cli.Command{
 
 		return nil
 	},
+}
+
+func entryHandler(w http.ResponseWriter, r *http.Request) {
+	videoID := strings.TrimPrefix(r.URL.Path, "/entry/")
+	if videoID == "" || strings.Contains(videoID, "/") {
+		http.NotFound(w, r)
+		return
+	}
+	var found *queue.VideoInfo
+	for _, v := range queue.GetAll() {
+		if v.VideoID == videoID {
+			found = v
+			break
+		}
+	}
+	if found == nil {
+		http.NotFound(w, r)
+		return
+	}
+	tmpl, err := template.ParseFS(templates.Files, "entry.html")
+	if err != nil {
+		log.Printf("Error parsing entry template: %v", err)
+		http.Error(w, "Template parse error", http.StatusInternalServerError)
+		return
+	}
+	if err := tmpl.ExecuteTemplate(w, "entry.html", found); err != nil {
+		log.Printf("Error executing entry template: %v", err)
+		http.Error(w, "Template execution error", http.StatusInternalServerError)
+		return
+	}
+}
+
+func entrySummarizeHandler(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/entry/")
+	parts := strings.SplitN(path, "/", 2)
+	if len(parts) < 2 || parts[1] != "summarize" {
+		http.NotFound(w, r)
+		return
+	}
+	videoID := parts[0]
+	var found *queue.VideoInfo
+	for _, v := range queue.GetAll() {
+		if v.VideoID == videoID {
+			found = v
+			break
+		}
+	}
+	if found == nil {
+		http.NotFound(w, r)
+		return
+	}
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		http.Error(w, "OpenAI API key not set.", http.StatusInternalServerError)
+		return
+	}
+	summarizer, err := summarize.NewLLMSummarizer(apiKey, "gpt-4.1-nano")
+	if err != nil {
+		http.Error(w, "Error initializing summarizer", http.StatusInternalServerError)
+		return
+	}
+	summary, err := summarizer.SummarizeText(r.Context(), found.Transcript)
+	if err != nil {
+		http.Error(w, "Error summarizing transcript", http.StatusInternalServerError)
+		return
+	}
+	found.Summary = summary
+	tmpl, err := template.ParseFS(templates.Files, "entry.html")
+	if err != nil {
+		log.Printf("Error parsing entry template: %v", err)
+		http.Error(w, "Template parse error", http.StatusInternalServerError)
+		return
+	}
+	if err := tmpl.ExecuteTemplate(w, "entry.html", found); err != nil {
+		log.Printf("Error executing entry template: %v", err)
+		http.Error(w, "Template execution error", http.StatusInternalServerError)
+		return
+	}
 }
 
 func startTranscriptionWorker() {

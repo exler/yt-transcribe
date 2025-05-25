@@ -71,41 +71,18 @@
 						<th>Duration</th>
 						<th>Uploaded</th>
 						<th>Status</th>
-						<th>Details</th>
-						<th>Summary</th>
 					</tr>
 				</thead>
 				<tbody id="queueTableBody">
 		`;
 
 		queueData.forEach(item => {
-			let detailsContent = '';
-			if (item.Status === 'completed') {
-				detailsContent = `
-					<details>
-						<summary>View Transcript (click to expand)</summary>
-						<p style="white-space: pre-wrap; max-height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 5px;">${escapeHTML(item.Transcript)}</p>
-					</details>
-				`; // Removed the old form-based summarize button
-			} else if (item.Status === 'failed' || item.Status === 'download_failed' || item.Status === 'transcription_failed' || item.Status === 'metadata_failed') {
-				detailsContent = `<span style="color: red;">Error: ${escapeHTML(item.Error)}</span>`;
-			} else {
-				detailsContent = 'N/A';
-			}
-
-			let summaryCellContent = 'N/A';
-			if (item.Status === 'completed') {
-				summaryCellContent = `<button class="summarize-btn" data-videoid="${item.VideoID}">Summarize</button>`;
-			}
-			
 			tableHTML += `
-				<tr>
+				<tr onclick="window.location.href='/entry/${escapeHTML(item.VideoID)}';" style="cursor: pointer;">
 					<td>${escapeHTML(item.Title)}</td>
 					<td>${escapeHTML(item.Duration)}</td>
 					<td>${escapeHTML(formatUploadDate(item.UploadDate))}</td>
 					<td>${escapeHTML(item.Status)}</td>
-					<td>${detailsContent}</td>
-					<td id="summary-cell-${item.VideoID}">${summaryCellContent}</td>
 				</tr>
 			`;
 		});
