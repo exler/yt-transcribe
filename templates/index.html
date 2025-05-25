@@ -1,6 +1,7 @@
 <html>
 <head>
 	<title>yt-transcript</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" type="text/css" href="/static/style.css">
 	<link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
 	<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
@@ -8,8 +9,8 @@
 	<link rel="manifest" href="/static/site.webmanifest">
 </head>
 <body>
-	<img src="/static/logo.webp" alt="yt-transcript" width="180" />
-	<h1><a href="/">YouTube Transcription</a></h1>
+	<a href="/"><img src="/static/logo.webp" alt="yt-transcript" width="180" /></a>
+	<p>Enter a YouTube URL to transcribe the video.</p>
 	<form method="POST" action="/">
 		<input type="text" name="youtube_url" placeholder="Enter YouTube URL" size="50">
 		<input type="submit" value="Transcribe">
@@ -19,26 +20,7 @@
 		<p style="color: red;">Error: {{.ErrorDetail}}</p>
 	{{end}}
 
-	{{if .Summary}}
-		<h2>Summary:</h2>
-		<p>{{.Summary}}</p>
-	{{end}}
-	
-	{{if .Transcript}}
-		<h2>Transcript:</h2>
-		<p>{{.Transcript}}</p>
-
-
-		{{if not .Summary}}
-			<form method="POST" action="/summarize">
-				<input type="hidden" name="text" value="{{.Transcript}}">
-				<input type="submit" value="Summarize Transcript">
-			</form>
-		{{end}}
-	{{end}}
-
-	<h2>Transcription Queue</h2>
-	<button id="refreshQueueBtn">Refresh Queue</button>
+	<h3>Transcription Queue</h3>
 	<div id="transcriptionQueue">
 		<p>Loading queue...</p>
 	</div>
@@ -79,10 +61,10 @@
 		queueData.forEach(item => {
 			tableHTML += `
 				<tr onclick="window.location.href='/entry/${escapeHTML(item.VideoID)}';" style="cursor: pointer;">
-					<td>${escapeHTML(item.Title)}</td>
-					<td>${escapeHTML(item.Duration)}</td>
-					<td>${escapeHTML(formatUploadDate(item.UploadDate))}</td>
-					<td>${escapeHTML(item.Status)}</td>
+					<td data-label="Title">${escapeHTML(item.Title)}</td>
+					<td data-label="Duration">${escapeHTML(item.Duration)}</td>
+					<td data-label="Uploaded">${escapeHTML(formatUploadDate(item.UploadDate))}</td>
+					<td data-label="Status">${escapeHTML(item.Status)}</td>
 				</tr>
 			`;
 		});
@@ -125,15 +107,8 @@
 	// Initial fetch
 	fetchQueueData();
 
-	const refreshButton = document.getElementById('refreshQueueBtn');
-	if (refreshButton) {
-		refreshButton.addEventListener('click', function() {
-			fetchQueueData();
-		});
-	}
-
-	// Periodic fetch (disabled for now)
-	// setInterval(fetchQueueData, 5000); // Refresh every 5 seconds
+	// Refresh on an interval
+	setInterval(fetchQueueData, 5000); // Refresh every 5 seconds
 
 	async function handleSummarizeClick(videoId) {
 		const item = currentQueueData.find(v => v.VideoID === videoId);
@@ -178,24 +153,6 @@
 			}
 		}
 	}
-
-	// Event Delegation for Summarize Buttons
-	// Adding to document.addEventListener('DOMContentLoaded') is safer if script is in <head>
-	// but since it's at the end of <body>, direct attachment is usually fine.
-	// Let's wrap it in DOMContentLoaded for best practice.
-	document.addEventListener('DOMContentLoaded', () => {
-		const queueTableDiv = document.getElementById('transcriptionQueue');
-		if (queueTableDiv) {
-			queueTableDiv.addEventListener('click', function(event) {
-				if (event.target && event.target.classList.contains('summarize-btn')) {
-					const videoId = event.target.dataset.videoid;
-					if (videoId) {
-						handleSummarizeClick(videoId);
-					}
-				}
-			});
-		}
-	});
 </script>
 </body>
 </html>

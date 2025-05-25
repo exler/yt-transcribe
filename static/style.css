@@ -1,216 +1,138 @@
-/* Color Palette:
-   Background: #EFEAE4 (Off-White/Light Beige)
-   Text: #40322F (Dark Brown/Charcoal)
-   Primary Accent (buttons, links, h1): #D9737B (Coral Pink)
-   Secondary Accent (hover states, borders, table header bg): #F2A9A2 (Light Salmon)
-   Error Text/Accent: #A64444 (Brick Red)
-*/
+:root {
+    --bg-color: #EFEAE4;
+    --text-color: #40322F;
+    --primary-color: #D9737B;
+    --secondary-color: #F2A9A2;
+    --error-color: #A64444;
+}
 
 body {
-    background-color: #EFEAE4;
-    /* Off-White/Light Beige */
-    color: #40322F;
-    /* Dark Brown/Charcoal */
+    background-color: var(--bg-color);
+    color: var(--text-color);
     font-family: sans-serif;
-    margin: 20px;
+    margin: 1.25rem auto;
     line-height: 1.6;
-    /* Moved from p to body for general text */
+    text-align: center;
+    max-width: 896px;
 }
 
 h1,
 h2 {
-    color: #D9737B;
-    /* Coral Pink */
-}
-
-h1>a {
-    text-decoration: none;
-    color: inherit;
-    /* Inherits #D9737B from h1 */
+    color: var(--primary-color);
 }
 
 a {
-    color: #D9737B;
-    /* Coral Pink */
-    text-decoration: none;
+    color: var(--primary-color);
 }
 
 a:hover {
-    color: #A64444;
-    /* Brick Red */
+    color: var(--error-color);
     text-decoration: underline;
 }
 
 input[type="text"] {
-    padding: 8px;
-    margin-right: 5px;
-    border: 1px solid #F2A9A2;
-    /* Light Salmon */
-    border-radius: 4px;
+    max-width: 96%;
+    padding: 0.5rem;
+    border: 1px solid var(--secondary-color);
+    border-radius: 0.25rem;
     background-color: #fff;
-    /* White, or could be a very light #EFEAE4 tint */
-    color: #40322F;
-    /* Dark Brown/Charcoal */
+    color: var(--text-color);
 }
 
 input[type="submit"],
 button {
-    padding: 8px 15px;
-    background-color: #D9737B;
-    /* Coral Pink */
-    color: #EFEAE4;
-    /* Off-White/Light Beige for contrast */
-    border: 1px solid #A64444;
-    /* Brick Red for a stronger border */
-    border-radius: 4px;
+    padding: 0.5rem 0.9375rem;
+    background-color: var(--primary-color);
+    color: var(--bg-color);
+    border: 1px solid var(--error-color);
+    border-radius: 0.25rem;
     cursor: pointer;
     font-weight: bold;
+    margin: 0.3125rem;
 }
 
 input[type="submit"]:hover,
 button:hover {
-    background-color: #A64444;
-    /* Brick Red */
-    color: #EFEAE4;
-    /* Off-White/Light Beige */
-    border-color: #A64444;
-    /* Ensure border matches */
+    background-color: var(--error-color);
+    color: var(--bg-color);
+    border-color: var(--error-color);
 }
 
 p {
-    /* line-height is now in body */
     margin-bottom: 1em;
-    /* Default spacing for paragraphs */
 }
 
-/* Transcription Queue Table Styles */
 #transcriptionQueue table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    /* Subtle shadow for depth */
+    margin: 1.25rem auto 0 auto;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
 }
 
 #transcriptionQueue th,
 #transcriptionQueue td {
-    border: 1px solid #F2A9A2;
-    /* Light Salmon */
-    padding: 10px 14px;
-    /* Increased padding slightly */
+    border: 1px solid var(--secondary-color);
+    padding: 0.625rem 0.875rem;
     text-align: left;
-    color: #40322F;
-    /* Dark Brown/Charcoal */
+    color: var(--text-color);
     vertical-align: top;
-    /* Align content to the top */
 }
 
 #transcriptionQueue th {
-    background-color: #F2A9A2;
-    /* Light Salmon */
-    color: #40322F;
-    /* Dark Brown/Charcoal */
+    background-color: var(--secondary-color);
+    color: var(--text-color);
     font-weight: bold;
 }
 
 #transcriptionQueue tbody tr:nth-child(even) {
-    background-color: #f9f5f2;
-    /* Slightly darker beige for striping */
+    background-color: var(--bg-color);
 }
 
 #transcriptionQueue tbody tr:hover {
-    background-color: #F2A9A2;
-    /* Light Salmon on hover for the row */
+    background-color: var(--secondary-color);
 }
 
-/* Styling for the <details> content within the table */
-#transcriptionQueue details {
-    margin: 0;
-}
-
-#transcriptionQueue details summary {
-    cursor: pointer;
-    color: #D9737B;
-    /* Coral Pink for the summary text */
-    font-weight: normal;
-}
-
-#transcriptionQueue details summary:hover {
-    color: #A64444;
-    /* Brick Red on hover */
-}
-
-#transcriptionQueue details p {
-    white-space: pre-wrap;
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid #F2A9A2;
-    /* Light Salmon border */
-    padding: 10px;
-    background-color: #fff;
-    /* White background for the transcript text area */
-    margin-top: 5px;
-    /* Space between summary and paragraph */
-    color: #40322F;
-    /* Dark Brown/Charcoal for transcript text */
-    border-radius: 4px;
-}
-
-/* Error text styling within the table (already handled by JS setting color to red) */
-#transcriptionQueue td span[style*="color: red;"] {
-    /* More specific if needed */
-    color: #A64444 !important;
-    /* Brick Red - important to override inline style if necessary */
-    font-weight: bold;
-}
-
-/* General error class that could be used */
 .error-text {
-    color: #A64444;
+    color: var(--error-color);
     /* Brick Red */
     font-weight: bold;
 }
 
+@media (max-width: 600px) {
+    #transcriptionQueue thead {
+        display: none;
+    }
 
-/* Feedback Messages (from HTML template) */
-/* Note: index.html uses inline styles. These classes are for potential refactoring. */
-.feedback-success {
-    color: #40322F;
-    /* Dark Brown/Charcoal for success messages */
-    /* Or a specific green if preferred: e.g. #3B593F */
-    padding: 10px;
-    margin-bottom: 15px;
-    border-radius: 4px;
-    background-color: #e6f4ea;
-    /* A light green background */
-    border: 1px solid #3B593F;
-    /* A darker green border */
-}
+    #transcriptionQueue table,
+    #transcriptionQueue tbody,
+    #transcriptionQueue th,
+    #transcriptionQueue td,
+    #transcriptionQueue tr {
+        display: block;
+    }
 
-.feedback-error {
-    color: #A64444;
-    /* Brick Red for error messages */
-    padding: 10px;
-    margin-bottom: 15px;
-    border-radius: 4px;
-    background-color: #f8d7da;
-    /* A light red background */
-    border: 1px solid #A64444;
-    /* Brick Red border */
-}
+    #transcriptionQueue tr {
+        margin-bottom: 1rem;
+    }
 
-/* Message styling for messages directly in HTML (e.g. from .QueueAddErrorMessage) */
-/* This targets the inline styles if they are not removed */
-p[style*="color: red;"] {
-    /* For general errors not in queue table */
-    color: #A64444 !important;
-    /* Brick Red */
-    /* Consider adding more styling for these messages, e.g., background, padding */
-}
+    #transcriptionQueue td {
+        text-align: left;
+        border: none;
+        border-bottom: 1px solid var(--secondary-color);
+        position: relative;
+        padding-left: 50%;
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
 
-p[style*="color: green;"] {
-    /* For success messages not in queue table */
-    color: #3B593F !important;
-    /* Using a distinct success green */
-    /* Consider adding more styling */
+    #transcriptionQueue td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 45%;
+        padding-left: 0.625rem;
+        font-weight: bold;
+        text-align: left;
+        color: var(--primary-color);
+    }
 }
