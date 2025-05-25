@@ -98,6 +98,10 @@ p {
     font-weight: bold;
 }
 
+.text-left {
+    text-align: left;
+}
+
 @media (max-width: 600px) {
     #transcriptionQueue thead {
         display: none;

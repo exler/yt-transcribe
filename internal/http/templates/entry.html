@@ -14,12 +14,12 @@
     <p><strong>Status:</strong> {{.Status}}</p>
     <div>
         <h2>Transcript:</h2>
-        <p>{{.Transcript}}</p>
+        <p class="text-left">{{.Transcript}}</p>
     </div>
     <div>
         <h2>Summary:</h2>
         {{if .Summary}}
-        <p>{{.Summary}}</p>
+        <p class="text-left">{{.Summary}}</p>
         {{else}}
         <form method="POST" action="/entry/{{.VideoID}}/summarize">
             <input type="submit" value="Generate Summary">
