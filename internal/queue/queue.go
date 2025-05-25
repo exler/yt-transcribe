@@ -3,21 +3,45 @@ package queue
 import (
 	"fmt"
 	"sync"
+)
 
-	"github.com/exler/yt-transcribe/internal/fetch" // Assuming this is the correct import path
+type VideoStatus string
+
+const (
+	// VideoStatusPending indicates the video is waiting to be processed
+	VideoStatusPending             VideoStatus = "pending"
+	VideoStatusFetchingMetadata    VideoStatus = "fetching_metadata"
+	VideoStatusMetadataFailed      VideoStatus = "metadata_failed"
+	VideoStatusProcessing          VideoStatus = "processing"
+	VideoStatusDownloading         VideoStatus = "downloading"
+	VideoStatusDownloadFailed      VideoStatus = "download_failed"
+	VideoStatusTranscribing        VideoStatus = "transcribing"
+	VideoStatusTranscriptionFailed VideoStatus = "transcription_failed"
+	VideoStatusCompleted           VideoStatus = "completed"
+	VideoStatusFailed              VideoStatus = "failed"
 )
 
 // VideoInfo holds all information about a video in the transcription queue.
 type VideoInfo struct {
+	VideoURL      string // The original user-supplied YouTube URL
 	VideoID       string
 	Title         string
 	Duration      string
 	UploadDate    string
-	Status        string // "pending", "fetching_metadata", "metadata_failed", "processing", "downloading", "download_failed", "transcribing", "transcription_failed", "completed", "failed"
+	Status        VideoStatus
 	AudioFilePath string
 	Transcript    string
 	Summary       string
 	Error         string
+}
+
+// NewVideoInfo is a simplified struct for adding new videos to the queue.
+type NewVideoInfo struct {
+	VideoURL   string
+	VideoID    string
+	Title      string
+	Duration   string
+	UploadDate string
 }
 
 var (
@@ -25,56 +49,38 @@ var (
 	queueMutex         sync.Mutex
 )
 
-// Initialize the queue (optional, as zero value for slice is nil)
 func init() {
 	transcriptionQueue = make([]*VideoInfo, 0)
 }
 
 // Add attempts to fetch video metadata and adds it to the queue.
 // It does NOT download the audio file itself.
-func Add(videoURL string) (*VideoInfo, error) {
+func Add(initialInfo NewVideoInfo) (*VideoInfo, error) {
 	queueMutex.Lock()
 	defer queueMutex.Unlock()
 
-	// For metadata fetching, OutputDir might not be strictly needed by yt-dlp if not downloading.
-	// However, the existing NewYouTubeDownloader requires it.
-	// We'll pass a temporary/placeholder value. The actual downloader worker
-	// will use a proper OutputDir.
-	// For metadata fetching, OutputDir of YouTubeDownloader is not used by GetVideoMetadata.
-	// Pass an empty string for outputDir, which NewYouTubeDownloader will resolve to the current dir.
-	// This is acceptable as GetVideoMetadata does not write files.
-	downloader, err := fetch.NewYouTubeDownloader("") // OutputDir not used by GetVideoMetadata
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize downloader: %w", err)
-	}
-
-	// Call the new GetVideoMetadata function which only fetches metadata
-	videoMeta, err := downloader.GetVideoMetadata(videoURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch video metadata: %w", err)
-	}
-
 	// Check for existing VideoID
 	for _, item := range transcriptionQueue {
-		if item.VideoID == videoMeta.VideoID {
-			return item, fmt.Errorf("video %s already in queue", videoMeta.VideoID)
+		if item.VideoID == initialInfo.VideoID {
+			return item, fmt.Errorf("video %s already in queue", initialInfo.VideoID)
 		}
 	}
 
-	info := &VideoInfo{
-		VideoID:    videoMeta.VideoID,
-		Title:      videoMeta.Title,
-		Duration:   videoMeta.Duration,
-		UploadDate: videoMeta.UploadDate,
-		Status:     "pending", // Initial status
-		// AudioFilePath will be set by the worker after actual download
-		AudioFilePath: "", // Explicitly empty
+	finalInfo := &VideoInfo{
+		VideoURL:      initialInfo.VideoURL,
+		VideoID:       initialInfo.VideoID,
+		Title:         initialInfo.Title,
+		Duration:      initialInfo.Duration,
+		UploadDate:    initialInfo.UploadDate,
+		Status:        VideoStatusPending, // Initial status
+		AudioFilePath: "",
 		Transcript:    "",
+		Summary:       "",
 		Error:         "",
 	}
 
-	transcriptionQueue = append(transcriptionQueue, info)
-	return info, nil
+	transcriptionQueue = append(transcriptionQueue, finalInfo)
+	return finalInfo, nil
 }
 
 // GetNext finds the next "pending" video, sets its status to "processing", and returns it.
@@ -83,16 +89,18 @@ func GetNext() *VideoInfo {
 	defer queueMutex.Unlock()
 
 	for _, item := range transcriptionQueue {
-		if item.Status == "pending" {
-			item.Status = "processing" // Mark as processing
+		if item.Status == VideoStatusPending {
+			item.Status = VideoStatusProcessing
 			return item
 		}
 	}
-	return nil // No pending items
+
+	// No pending items
+	return nil
 }
 
 // UpdateStatus updates the status and optionally the error message and transcript of a video.
-func UpdateStatus(videoID string, status string, errorMessage string, transcript ...string) {
+func UpdateStatus(videoID string, status VideoStatus, errorMessage string, transcript ...string) {
 	queueMutex.Lock()
 	defer queueMutex.Unlock()
 
@@ -140,8 +148,8 @@ func GetAll() []*VideoInfo {
 	return queueCopy
 }
 
-// Helper function to clear the queue, useful for testing
-func ClearQueueForTesting() {
+// Helper function to clear the queue
+func ClearQueue() {
 	queueMutex.Lock()
 	defer queueMutex.Unlock()
 	transcriptionQueue = make([]*VideoInfo, 0)
