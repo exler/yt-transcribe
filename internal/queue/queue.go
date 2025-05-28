@@ -131,19 +131,17 @@ func SetAudioPath(videoID string, audioPath string) {
 	}
 }
 
-// GetAll returns a copy of the current queue.
+// GetAll returns a copy of the current queue in LIFO order.
 func GetAll() []*VideoInfo {
 	queueMutex.Lock()
 	defer queueMutex.Unlock()
 
-	// Return a copy to prevent external modification
-	queueCopy := make([]*VideoInfo, len(transcriptionQueue))
+	length := len(transcriptionQueue)
+	queueCopy := make([]*VideoInfo, length)
+
 	for i, item := range transcriptionQueue {
-		// Shallow copy of the VideoInfo struct is usually fine if fields are simple types.
-		// If VideoInfo contained pointers/slices that could be modified, a deep copy might be needed.
-		// For now, a shallow copy of each item is made into the new slice.
 		itemCopy := *item
-		queueCopy[i] = &itemCopy
+		queueCopy[length-1-i] = &itemCopy
 	}
 	return queueCopy
 }
