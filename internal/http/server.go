@@ -144,6 +144,8 @@ func (s *Server) EntrySummarizeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	found.Summary = summary
 
+	queue.UpdateItem(found.VideoID, found.Status, "", found.Transcript, found.Summary)
+
 	renderTemplate(w, "entry", pageData{
 		Title:                  found.Title,
 		VideoID:                found.VideoID,

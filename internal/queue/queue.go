@@ -99,20 +99,17 @@ func GetNext() *VideoInfo {
 	return nil
 }
 
-// UpdateStatus updates the status and optionally the error message and transcript of a video.
-func UpdateStatus(videoID string, status VideoStatus, errorMessage string, transcript ...string) {
+// UpdateItem updates the status and optionally the error message and transcript of a video.
+func UpdateItem(videoID string, status VideoStatus, errorMessage string, transcript string, summary string) {
 	queueMutex.Lock()
 	defer queueMutex.Unlock()
 
 	for _, item := range transcriptionQueue {
 		if item.VideoID == videoID {
 			item.Status = status
-			if errorMessage != "" {
-				item.Error = errorMessage
-			}
-			if len(transcript) > 0 {
-				item.Transcript = transcript[0]
-			}
+			item.Error = errorMessage
+			item.Transcript = transcript
+			item.Summary = summary
 			return
 		}
 	}
