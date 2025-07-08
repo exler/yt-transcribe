@@ -71,13 +71,13 @@ var (
 				return cli.Exit(fmt.Sprintf("Failed to download audio: %v", err), 1)
 			}
 
-			whisperTranscriber, err := ai.NewWhisperTranscriber(apiKey, model)
+			audioTranscriber, err := ai.NewAudioTranscriber(apiKey, model)
 			if err != nil {
-				return cli.Exit(fmt.Sprintf("Failed to initialize Whisper transcriber: %v", err), 1)
+				return cli.Exit(fmt.Sprintf("Failed to initialize audio transcriber: %v", err), 1)
 			}
 
-			fmt.Println("Transcribing audio with OpenAI Whisper API...")
-			transcriptionText, err := whisperTranscriber.TranscribeFile(ctx, downloadedMetadata.AudioFilePath)
+			fmt.Println("Transcribing audio with OpenAI API...")
+			transcriptionText, err := audioTranscriber.TranscribeFile(ctx, downloadedMetadata.AudioFilePath)
 			if err != nil {
 				return cli.Exit(fmt.Sprintf("Failed to transcribe audio: %v", err), 1)
 			}

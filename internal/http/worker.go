@@ -13,7 +13,7 @@ import (
 )
 
 type TranscriptionWorker struct {
-	transcriber *ai.WhisperTranscriber
+	transcriber *ai.AudioTranscriber
 }
 
 func NewTranscriptionWorker(openaiAPIKey, model string) (*TranscriptionWorker, error) {
@@ -24,13 +24,13 @@ func NewTranscriptionWorker(openaiAPIKey, model string) (*TranscriptionWorker, e
 		return nil, errors.New("transcription model is required")
 	}
 
-	whisperTranscriber, err := ai.NewWhisperTranscriber(openaiAPIKey, model)
+	audioTranscriber, err := ai.NewAudioTranscriber(openaiAPIKey, model)
 	if err != nil {
-		log.Fatalf("Failed to initialize Whisper transcriber: %v", err)
+		log.Fatalf("Failed to initialize audio transcriber: %v", err)
 	}
 
 	return &TranscriptionWorker{
-		transcriber: whisperTranscriber,
+		transcriber: audioTranscriber,
 	}, nil
 }
 

@@ -10,14 +10,15 @@ import (
 	"github.com/openai/openai-go/option"
 )
 
-// WhisperTranscriber handles audio transcription using OpenAI's Whisper API
-type WhisperTranscriber struct {
+// AudioTranscriber handles audio transcription using OpenAI's transcription API
+// https://platform.openai.com/docs/guides/speech-to-text
+type AudioTranscriber struct {
 	client *openai.Client
 	model  string
 }
 
-// NewWhisperTranscriber creates a new transcriber using OpenAI's Whisper API
-func NewWhisperTranscriber(apiKey, model string) (*WhisperTranscriber, error) {
+// NewAudioTranscriber creates a new transcriber using OpenAI's Whisper API
+func NewAudioTranscriber(apiKey, model string) (*AudioTranscriber, error) {
 	if apiKey == "" {
 		return nil, errors.New("OpenAI API key is required")
 	}
@@ -29,14 +30,14 @@ func NewWhisperTranscriber(apiKey, model string) (*WhisperTranscriber, error) {
 	// Create OpenAI client with API key
 	client := openai.NewClient(option.WithAPIKey(apiKey))
 
-	return &WhisperTranscriber{
+	return &AudioTranscriber{
 		client: &client,
 		model:  model,
 	}, nil
 }
 
 // TranscribeFile transcribes the given audio file using OpenAI's Whisper API
-func (t *WhisperTranscriber) TranscribeFile(ctx context.Context, filePath string) (string, error) {
+func (t *AudioTranscriber) TranscribeFile(ctx context.Context, filePath string) (string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to open audio file: %w", err)
