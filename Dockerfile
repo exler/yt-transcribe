@@ -17,7 +17,7 @@ FROM alpine:edge
 WORKDIR /app
 COPY --from=build_go /yt-transcribe /app/yt-transcribe
 
-RUN apk update && apk add yt-dlp
+RUN apk update && apk add yt-dlp ffmpeg
 
 ENTRYPOINT ["/app/yt-transcribe", "runserver"]
 

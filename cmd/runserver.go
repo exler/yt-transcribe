@@ -35,6 +35,11 @@ var runserverCmd = &cli.Command{
 			Usage: "Port to run the HTTP server on",
 			Value: 8000,
 		},
+		&cli.FloatFlag{
+			Name:  "audio-speed-factor",
+			Usage: "Speed up the audio by a factor",
+			Value: 2.5,
+		},
 	},
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		openaiAPIKey := cmd.String("openai-api-key")
@@ -51,6 +56,8 @@ var runserverCmd = &cli.Command{
 		if summarizationModel == "" {
 			return cli.Exit("Summarization model is required", 1)
 		}
+
+		audioSpeedFactor := cmd.Float("audio-speed-factor")
 
 		server, err := internalHttp.NewServer(
 			openaiAPIKey,
@@ -71,7 +78,7 @@ var runserverCmd = &cli.Command{
 		}
 		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFiles))))
 
-		worker, err := internalHttp.NewTranscriptionWorker(openaiAPIKey, transcriptionModel)
+		worker, err := internalHttp.NewTranscriptionWorker(openaiAPIKey, transcriptionModel, audioSpeedFactor)
 		if err != nil {
 			return cli.Exit("Failed to initialize transcription worker: "+err.Error(), 1)
 		}

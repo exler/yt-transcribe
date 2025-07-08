@@ -5,18 +5,22 @@ import (
 	"errors"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/exler/yt-transcribe/internal/ai"
 	"github.com/exler/yt-transcribe/internal/fetch"
+	"github.com/exler/yt-transcribe/internal/ffmpeg"
 	"github.com/exler/yt-transcribe/internal/queue"
 )
 
 type TranscriptionWorker struct {
-	transcriber *ai.AudioTranscriber
+	transcriber      *ai.AudioTranscriber
+	ffmpeg           *ffmpeg.FFMPEG
+	audioSpeedFactor float64
 }
 
-func NewTranscriptionWorker(openaiAPIKey, model string) (*TranscriptionWorker, error) {
+func NewTranscriptionWorker(openaiAPIKey, model string, audioSpeedFactor float64) (*TranscriptionWorker, error) {
 	if openaiAPIKey == "" {
 		return nil, errors.New("OpenAI API key is required")
 	}
@@ -29,8 +33,15 @@ func NewTranscriptionWorker(openaiAPIKey, model string) (*TranscriptionWorker, e
 		log.Fatalf("Failed to initialize audio transcriber: %v", err)
 	}
 
+	ffmpeg, err := ffmpeg.NewFFMPEG()
+	if err != nil {
+		log.Fatalf("Failed to initialize ffmpeg: %v", err)
+	}
+
 	return &TranscriptionWorker{
-		transcriber: audioTranscriber,
+		transcriber:      audioTranscriber,
+		ffmpeg:           ffmpeg,
+		audioSpeedFactor: audioSpeedFactor,
 	}, nil
 }
 
@@ -53,9 +64,8 @@ func (w *TranscriptionWorker) RunTranscriptionWorker(ctx context.Context) {
 			queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusFailed, "Failed to create temp directory: "+err.Error(), "", "")
 			continue
 		}
-		defer os.RemoveAll(tempDir) // Ensure cleanup
 
-		// 1. Download Audio
+		// Download audio
 		queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusDownloading, "", "", "")
 		downloader, err := fetch.NewYouTubeDownloader(tempDir)
 		if err != nil {
@@ -73,14 +83,29 @@ func (w *TranscriptionWorker) RunTranscriptionWorker(ctx context.Context) {
 		queue.SetAudioPath(videoInfo.VideoID, downloadedMetadata.AudioFilePath)
 		log.Printf("Audio downloaded for %s to %s", videoInfo.VideoID, downloadedMetadata.AudioFilePath)
 
-		// 2. Transcribe Audio
+		// Post-process audio
+		outputFile := filepath.Join(tempDir, "processed.mp3")
+		log.Printf("Processing audio with ffmpeg (speed: %.2fx)...", w.audioSpeedFactor)
+		err = w.ffmpeg.SpeedUpAudio(downloadedMetadata.AudioFilePath, outputFile, w.audioSpeedFactor)
+		if err != nil {
+			log.Printf("Error processing audio for %s: %v", videoInfo.VideoID, err)
+			queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusFailed, "Failed to process audio: "+err.Error(), "", "")
+			continue
+		}
+
+		// Transcribe audio
 		queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusTranscribing, "", "", "")
 
-		transcriptionText, err := w.transcriber.TranscribeFile(ctx, downloadedMetadata.AudioFilePath)
+		transcriptionText, err := w.transcriber.TranscribeFile(ctx, outputFile)
 		if err != nil {
 			log.Printf("Error transcribing audio for %s: %v", videoInfo.VideoID, err)
 			queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusFailed, "Failed to transcribe audio: "+err.Error(), "", "")
 			continue
+		}
+
+		// Clean up temporary files
+		if err := os.RemoveAll(tempDir); err != nil {
+			log.Printf("Error cleaning up temp directory for %s: %v", videoInfo.VideoID, err)
 		}
 
 		queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusCompleted, "", transcriptionText, "")
