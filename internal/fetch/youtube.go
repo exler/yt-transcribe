@@ -68,7 +68,9 @@ func (d *YouTubeDownloader) DownloadAudio(videoURL string, options ...string) (V
 	outputTemplate := filepath.Join(d.OutputDir, "%(id)s.%(ext)s")
 
 	args := []string{
-		"--format", "bestaudio/best",
+		"--format", "bestaudio[ext=m4a]",
+		"--extract-audio",
+		"--audio-format", "m4a",
 		"--output", outputTemplate,
 		"--no-playlist",
 		"--no-simulate",
