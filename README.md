@@ -12,6 +12,7 @@
 * Transcribe YouTube audio using OpenAI's Whisper model
 * Summarize the transcription using OpenAI's LLM
 * Queue multiple video transcriptions
+* Post-process audio with FFMPEG to speed up transcription to save token usage
 
 ![Screenshot](docs/screenshot.png)
 
