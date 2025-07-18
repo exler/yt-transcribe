@@ -46,6 +46,19 @@ func (d *YouTubeDownloader) CheckYTDLP() error {
 	return nil
 }
 
+// GetYTDLPVersion retrieves the version of the yt-dlp package
+func (d *YouTubeDownloader) GetYTDLPVersion() (string, error) {
+	cmd := exec.Command("yt-dlp", "--version")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("yt-dlp not found: %w", err)
+	}
+
+	// yt-dlp --version returns just the version string
+	version := strings.TrimSpace(string(output))
+	return version, nil
+}
+
 func formatDuration(duration string) string {
 	// If duration is less than a minute, format it as "0:<secs>"
 	if strings.Count(duration, ":") == 0 {

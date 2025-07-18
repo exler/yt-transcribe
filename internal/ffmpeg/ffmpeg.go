@@ -3,6 +3,7 @@ package ffmpeg
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 // FFMPEG wraps the ffmpeg command-line tool.
@@ -21,6 +22,27 @@ func (f *FFMPEG) CheckFFMPEG() error {
 		return fmt.Errorf("ffmpeg not found: %w", err)
 	}
 	return nil
+}
+
+// GetFFMPEGVersion retrieves the version of the ffmpeg package
+func (f *FFMPEG) GetFFMPEGVersion() (string, error) {
+	cmd := exec.Command("ffmpeg", "-version")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("ffmpeg not found: %w", err)
+	}
+
+	// Parse first line to extract version info
+	lines := strings.Split(string(output), "\n")
+	if len(lines) > 0 && strings.Contains(lines[0], "ffmpeg version") {
+		// Extract version from line like "ffmpeg version 4.4.2-0ubuntu0.22.04.1"
+		parts := strings.Fields(lines[0])
+		if len(parts) >= 3 {
+			return parts[2], nil
+		}
+	}
+
+	return "unknown", nil
 }
 
 // SpeedUpAudio speeds up the audio file and converts it to a low-bitrate MP3
