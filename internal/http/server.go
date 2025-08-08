@@ -137,7 +137,7 @@ func (s *Server) EntrySummarizeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	summary, err := s.summarizer.SummarizeText(r.Context(), found.Transcript)
+	summary, err := s.summarizer.SummarizeText(r.Context(), found.Title, found.Transcript)
 	if err != nil {
 		http.Error(w, "Error summarizing transcript", http.StatusInternalServerError)
 		return
