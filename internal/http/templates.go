@@ -13,6 +13,8 @@ import (
 type pageData struct {
 	Title                  string
 	VideoID                string
+	Duration               string
+	UploadDate             string
 	Status                 queue.VideoStatus
 	Transcript             string
 	Summary                string

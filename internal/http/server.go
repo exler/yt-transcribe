@@ -111,6 +111,8 @@ func (s *Server) EntryHandler(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "entry", pageData{
 		Title:                  found.Title,
 		VideoID:                found.VideoID,
+		Duration:               found.Duration,
+		UploadDate:             found.UploadDate,
 		Transcript:             found.Transcript,
 		Summary:                found.Summary,
 		ErrorDetail:            found.Error,

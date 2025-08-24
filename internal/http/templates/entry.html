@@ -4,23 +4,119 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="/static/style.css">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
-	<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
-	<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
-	<link rel="manifest" href="/static/site.webmanifest">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <link rel="manifest" href="/static/site.webmanifest">
 </head>
 <body>
-    <a href="/">Back to list</a>
-    <h1>{{.Title}}</h1>
-    <p><strong>Status:</strong> {{.Status}}</p>
-    <div>
-        <h2>Transcript:</h2>
-        <p class="text-left">{{.Transcript}}</p>
-    </div>
-    <div>
-        <h2>Summary:</h2>
-        {{if .Summary}}
-        <p class="text-left">{{.Summary}}</p>
+    <!-- Header bar -->
+    <header class="header">
+        <div class="brand">
+            <a href="/"><img src="/static/logo.webp" alt="yt-transcribe" width="140"></a>
+        </div>
+        <div class="header-actions">
+            <a href="/" class="btn btn-secondary">Go back</a>
+        </div>
+    </header>
+
+    <!-- Title and meta -->
+    <section class="entry-meta">
+        <h1 class="entry-title">{{.Title}}</h1>
+        <div class="meta-row">
+            <span>Duration: <strong>{{.Duration}}</strong></span>
+            <span>•</span>
+            <span>Uploaded: <strong id="uploadedDate" data-raw="{{.UploadDate}}">{{.UploadDate}}</strong></span>
+            <span class="status-badge" id="statusBadge"></span>
+        </div>
+    </section>
+
+    <!-- Tabs -->
+    <nav class="tabs" role="tablist">
+        <button id="tab-transcript" class="tab active" data-target="#panel-transcript">Transcript</button>
+        <button id="tab-summary" class="tab" data-target="#panel-summary">Summary</button>
+        <div class="tab-actions">
+            <button id="btn-copy" class="btn" title="Copy to clipboard">Copy</button>
+            <button id="btn-download" class="btn btn-outline" title="Download as .txt">Download</button>
+        </div>
+    </nav>
+
+    <main>
+        <h3 class="section-title">Full Transcript</h3>
+        <div class="card">
+            <div id="panel-transcript" class="panel show" role="tabpanel" aria-labelledby="tab-transcript">
+                <div id="content-transcript" class="content text-left">{{.Transcript}}</div>
+            </div>
+            <div id="panel-summary" class="panel" role="tabpanel" aria-labelledby="tab-summary">
+                {{if .Summary}}
+                    <div id="content-summary" class="content text-left">{{.Summary}}</div>
+                {{else}}
+                    <div id="content-summary" class="content text-left muted">Summary not available yet.</div>
+                {{end}}
+            </div>
+        </div>
+        {{if .ErrorDetail}}
+            <p class="error-text">Error: {{.ErrorDetail}}</p>
         {{end}}
-    </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+    <script>
+        function formatUploadDate(dateStr) {
+            if (dateStr && dateStr.length === 8) {
+                return `${dateStr.substring(0,4)}-${dateStr.substring(4,6)}-${dateStr.substring(6,8)}`;
+            }
+            return dateStr || '';
+        }
+
+        function getActiveContent() {
+            const isTranscript = document.getElementById('tab-transcript').classList.contains('active');
+            return isTranscript ? document.getElementById('content-transcript').innerText : document.getElementById('content-summary').innerText;
+        }
+
+        function switchTab(targetId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('show'));
+            const btn = document.querySelector(`[data-target="${targetId}"]`);
+            const panel = document.querySelector(targetId);
+            if (btn) btn.classList.add('active');
+            if (panel) panel.classList.add('show');
+        }
+
+        document.getElementById('tab-transcript').addEventListener('click', () => switchTab('#panel-transcript'));
+        document.getElementById('tab-summary').addEventListener('click', () => switchTab('#panel-summary'));
+
+        document.getElementById('btn-copy').addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(getActiveContent());
+            } catch (e) {
+                console.error('Copy failed', e);
+            }
+        });
+
+        document.getElementById('btn-download').addEventListener('click', () => {
+            const blob = new Blob([getActiveContent()], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const isTranscript = document.getElementById('tab-transcript').classList.contains('active');
+            a.href = url;
+            a.download = isTranscript ? ({{printf "%q" .Title}} + ' - transcript.txt') : ({{printf "%q" .Title}} + ' - summary.txt');
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            a.remove();
+        });
+
+        // Initialize formatted upload date
+        const up = document.getElementById('uploadedDate');
+        if (up) {
+            up.textContent = window.formatUploadDate(up.dataset.raw);
+        }
+
+        // Render status badge using shared helper
+        const statusBadge = document.getElementById('statusBadge');
+        if (statusBadge) {
+            statusBadge.innerHTML = window.renderStatusBadge('{{.Status}}');
+        }
+    </script>
 </body>
 </html>

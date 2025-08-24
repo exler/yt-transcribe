@@ -66,7 +66,7 @@ func (f *FFMPEG) TranscribeWithWhisperFilter(inputFile, modelPath, language stri
 
 	// Build the whisper filter string
 	// Example: whisper=model=/models/ggml-small.bin:language=auto:queue=15:destination=/tmp/out.txt:format=text
-	filter := fmt.Sprintf("whisper=model=%s:language=%s:queue=%d:destination=%s:format=text", modelPath, language, queue, destPath)
+	filter := fmt.Sprintf("whisper=model=%s:language=%s:queue=%d:destination=%s:format=srt", modelPath, language, queue, destPath)
 
 	// Run ffmpeg to process audio only (-vn) and write null output while the filter writes to destination
 	cmd := exec.Command("ffmpeg", "-i", inputFile, "-vn", "-af", filter, "-f", "null", "-", "-y")
