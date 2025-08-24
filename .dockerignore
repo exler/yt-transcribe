@@ -1,0 +1,33 @@
+# VCS / meta
+.git
+.gitignore
+.gitattributes
+.github
+
+# Editors / OS
+.vscode
+.idea
+*.swp
+.DS_Store
+Thumbs.db
+
+# Go build outputs & artifacts
+bin/
+build/
+dist/
+out/
+*.exe
+*.out
+
+# Temp & logs
+tmp/
+temp/
+*.log
+*.tmp
+
+# Env files & secrets
+.env
+.env.*
+*.pem
+*.key
+*.crt

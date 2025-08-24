@@ -15,6 +15,9 @@ type Server struct {
 }
 
 func NewServer(openaiAPIKey, model string) (*Server, error) {
+	if openaiAPIKey == "" {
+		return &Server{summarizer: nil}, nil
+	}
 	summarizer, err := ai.NewLLMSummarizer(openaiAPIKey, model)
 	if err != nil {
 		return nil, err
@@ -123,6 +126,10 @@ func (s *Server) EntryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) EntrySummarizeHandler(w http.ResponseWriter, r *http.Request) {
+	if s.summarizer == nil {
+		http.Error(w, "Summarization disabled (no API key)", http.StatusServiceUnavailable)
+		return
+	}
 	videoID := r.PathValue("videoID")
 
 	var found *queue.VideoInfo

@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"github.com/exler/yt-transcribe/internal/ai"
 	"github.com/exler/yt-transcribe/internal/fetch"
 	"github.com/exler/yt-transcribe/internal/ffmpeg"
 	"github.com/urfave/cli/v3"
@@ -18,19 +16,19 @@ var (
 		Usage: "Transcribe a YouTube video",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:    "openai-api-key",
-				Usage:   "OpenAI API key for Whisper transcription",
-				Sources: cli.EnvVars("OPENAI_API_KEY"),
+				Name:  "whisper-model-path",
+				Usage: "Path to ggml whisper.cpp model file (e.g. /models/ggml-small.bin)",
+				Value: "models/ggml-small.bin",
 			},
 			&cli.StringFlag{
-				Name:  "model",
-				Usage: "Whisper model to use for transcription",
-				Value: "whisper-1",
+				Name:  "language",
+				Usage: "Language code to use or 'auto' to autodetect",
+				Value: "auto",
 			},
-			&cli.FloatFlag{
-				Name:  "audio-speed-factor",
-				Usage: "Speed up the audio by a factor",
-				Value: 2.5,
+			&cli.IntFlag{
+				Name:  "queue",
+				Usage: "FFmpeg whisper filter queue size in seconds",
+				Value: 15,
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -39,17 +37,12 @@ var (
 				return cli.Exit("Please provide a YouTube video URL to transcribe", 1)
 			}
 
-			apiKey := cmd.String("openai-api-key")
-			if apiKey == "" {
-				return cli.Exit("OpenAI API key is required", 1)
+			modelPath := cmd.String("whisper-model-path")
+			if modelPath == "" {
+				return cli.Exit("Path to whisper.cpp ggml model is required", 1)
 			}
-
-			model := cmd.String("model")
-			if model == "" {
-				return cli.Exit("Transcription model is required", 1)
-			}
-
-			audioSpeedFactor := cmd.Float("audio-speed-factor")
+			language := cmd.String("language")
+			queue := cmd.Int("queue")
 
 			tempDir, err := os.MkdirTemp("", "yt-transcribe-*")
 			if err != nil {
@@ -80,27 +73,16 @@ var (
 				return cli.Exit(fmt.Sprintf("Failed to download audio: %v", err), 1)
 			}
 
-			ffmpegProcessor, err := ffmpeg.NewFFMPEG()
+			ff, err := ffmpeg.NewFFMPEG()
 			if err != nil {
 				return cli.Exit(fmt.Sprintf("Failed to initialize ffmpeg: %v", err), 1)
 			}
 
-			outputFile := filepath.Join(tempDir, "processed.mp3")
-			fmt.Printf("Processing audio with ffmpeg (speed: %.2fx)...\n", audioSpeedFactor)
-			err = ffmpegProcessor.SpeedUpAudio(downloadedMetadata.AudioFilePath, outputFile, audioSpeedFactor)
+			// No speed-up: use original downloaded file for whisper filter
+			fmt.Println("Transcribing audio with FFmpeg whisper filter...")
+			transcriptionText, err := ff.TranscribeWithWhisperFilter(downloadedMetadata.AudioFilePath, modelPath, language, queue)
 			if err != nil {
-				return cli.Exit(fmt.Sprintf("Failed to process audio with ffmpeg: %v", err), 1)
-			}
-
-			audioTranscriber, err := ai.NewAudioTranscriber(apiKey, model)
-			if err != nil {
-				return cli.Exit(fmt.Sprintf("Failed to initialize audio transcriber: %v", err), 1)
-			}
-
-			fmt.Println("Transcribing audio with OpenAI API...")
-			transcriptionText, err := audioTranscriber.TranscribeFile(ctx, outputFile)
-			if err != nil {
-				return cli.Exit(fmt.Sprintf("Failed to transcribe audio: %v", err), 1)
+				return cli.Exit(fmt.Sprintf("Failed to transcribe audio with whisper filter: %v", err), 1)
 			}
 
 			fmt.Println(transcriptionText)

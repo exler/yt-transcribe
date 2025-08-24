@@ -5,43 +5,43 @@ import (
 	"errors"
 	"log"
 	"os"
-	"path/filepath"
 	"time"
 
-	"github.com/exler/yt-transcribe/internal/ai"
 	"github.com/exler/yt-transcribe/internal/fetch"
 	"github.com/exler/yt-transcribe/internal/ffmpeg"
 	"github.com/exler/yt-transcribe/internal/queue"
 )
 
 type TranscriptionWorker struct {
-	transcriber      *ai.AudioTranscriber
-	ffmpeg           *ffmpeg.FFMPEG
-	audioSpeedFactor float64
+	ffmpeg *ffmpeg.FFMPEG
+	// Path to the `ggml` converted Whisper models.
+	// https://github.com/ggml-org/whisper.cpp/blob/master/models/README.md
+	ffmpegWhisperModelPath string
+	// Transcription language or `auto` for automatic detection.
+	// Make sure your model supports the specified language.
+	ffmpegTranscriptionLanguage string
+	// Maximum size that will be queued into the filter before processing the audio.
+	ffmpegQueueSize int
 }
 
-func NewTranscriptionWorker(openaiAPIKey, model string, audioSpeedFactor float64) (*TranscriptionWorker, error) {
-	if openaiAPIKey == "" {
-		return nil, errors.New("OpenAI API key is required")
+func NewTranscriptionWorker(ffmpegWhisperModelPath, ffmpegTranscriptionLanguage string, ffmpegQueueSize int) (*TranscriptionWorker, error) {
+	if ffmpegWhisperModelPath == "" {
+		return nil, errors.New("whisper model path is required")
 	}
-	if model == "" {
-		return nil, errors.New("transcription model is required")
-	}
-
-	audioTranscriber, err := ai.NewAudioTranscriber(openaiAPIKey, model)
-	if err != nil {
-		log.Fatalf("Failed to initialize audio transcriber: %v", err)
+	if ffmpegTranscriptionLanguage == "" {
+		ffmpegTranscriptionLanguage = "auto"
 	}
 
-	ffmpeg, err := ffmpeg.NewFFMPEG()
+	f, err := ffmpeg.NewFFMPEG()
 	if err != nil {
 		log.Fatalf("Failed to initialize ffmpeg: %v", err)
 	}
 
 	return &TranscriptionWorker{
-		transcriber:      audioTranscriber,
-		ffmpeg:           ffmpeg,
-		audioSpeedFactor: audioSpeedFactor,
+		ffmpeg:                      f,
+		ffmpegWhisperModelPath:      ffmpegWhisperModelPath,
+		ffmpegTranscriptionLanguage: ffmpegTranscriptionLanguage,
+		ffmpegQueueSize:             ffmpegQueueSize,
 	}, nil
 }
 
@@ -83,20 +83,10 @@ func (w *TranscriptionWorker) RunTranscriptionWorker(ctx context.Context) {
 		queue.SetAudioPath(videoInfo.VideoID, downloadedMetadata.AudioFilePath)
 		log.Printf("Audio downloaded for %s to %s", videoInfo.VideoID, downloadedMetadata.AudioFilePath)
 
-		// Post-process audio
-		outputFile := filepath.Join(tempDir, "processed.mp3")
-		log.Printf("Processing audio with ffmpeg (speed: %.2fx)...", w.audioSpeedFactor)
-		err = w.ffmpeg.SpeedUpAudio(downloadedMetadata.AudioFilePath, outputFile, w.audioSpeedFactor)
-		if err != nil {
-			log.Printf("Error processing audio for %s: %v", videoInfo.VideoID, err)
-			queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusFailed, "Failed to process audio: "+err.Error(), "", "")
-			continue
-		}
-
-		// Transcribe audio
+		// Transcribe audio using FFmpeg whisper filter
 		queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusTranscribing, "", "", "")
 
-		transcriptionText, err := w.transcriber.TranscribeFile(ctx, outputFile)
+		transcriptionText, err := w.ffmpeg.TranscribeWithWhisperFilter(downloadedMetadata.AudioFilePath, w.ffmpegWhisperModelPath, w.ffmpegTranscriptionLanguage, w.ffmpegQueueSize)
 		if err != nil {
 			log.Printf("Error transcribing audio for %s: %v", videoInfo.VideoID, err)
 			queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusFailed, "Failed to transcribe audio: "+err.Error(), "", "")

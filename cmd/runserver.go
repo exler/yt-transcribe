@@ -17,47 +17,43 @@ var runserverCmd = &cli.Command{
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:    "openai-api-key",
-			Usage:   "OpenAI API key for transcription and summarization",
+			Usage:   "OpenAI API key for summarization",
 			Sources: cli.EnvVars("OPENAI_API_KEY"),
-		},
-		&cli.StringFlag{
-			Name:  "transcription-model",
-			Usage: "Whisper model to use for transcription",
-			Value: "whisper-1",
 		},
 		&cli.StringFlag{
 			Name:  "summarization-model",
 			Usage: "LLM model to use for summarization",
 			Value: "gpt-4.1-nano",
 		},
+		&cli.StringFlag{
+			Name:  "whisper-model-path",
+			Usage: "Path to ggml whisper.cpp model file (e.g. /models/ggml-small.bin)",
+			Value: "/app/models/ggml-small.bin",
+		},
+		&cli.StringFlag{
+			Name:  "language",
+			Usage: "Language code to use or 'auto' to autodetect",
+			Value: "auto",
+		},
+		&cli.IntFlag{
+			Name:  "queue",
+			Usage: "FFmpeg whisper filter queue size in seconds",
+			Value: 15,
+		},
 		&cli.IntFlag{
 			Name:  "port",
 			Usage: "Port to run the HTTP server on",
 			Value: 8000,
 		},
-		&cli.FloatFlag{
-			Name:  "audio-speed-factor",
-			Usage: "Speed up the audio by a factor",
-			Value: 2.5,
-		},
 	},
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		openaiAPIKey := cmd.String("openai-api-key")
-		if openaiAPIKey == "" {
-			return cli.Exit("OpenAI API key is required", 1)
-		}
-
-		transcriptionModel := cmd.String("transcription-model")
-		if transcriptionModel == "" {
-			return cli.Exit("Transcription model is required", 1)
-		}
 
 		summarizationModel := cmd.String("summarization-model")
-		if summarizationModel == "" {
-			return cli.Exit("Summarization model is required", 1)
-		}
 
-		audioSpeedFactor := cmd.Float("audio-speed-factor")
+		modelPath := cmd.String("whisper-model-path")
+		language := cmd.String("language")
+		queueSize := cmd.Int("queue")
 
 		server, err := internalHttp.NewServer(
 			openaiAPIKey,
@@ -78,7 +74,7 @@ var runserverCmd = &cli.Command{
 		}
 		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFiles))))
 
-		worker, err := internalHttp.NewTranscriptionWorker(openaiAPIKey, transcriptionModel, audioSpeedFactor)
+		worker, err := internalHttp.NewTranscriptionWorker(modelPath, language, queueSize)
 		if err != nil {
 			return cli.Exit("Failed to initialize transcription worker: "+err.Error(), 1)
 		}

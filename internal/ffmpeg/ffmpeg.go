@@ -2,6 +2,7 @@ package ffmpeg
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -45,22 +46,38 @@ func (f *FFMPEG) GetFFMPEGVersion() (string, error) {
 	return "unknown", nil
 }
 
-// SpeedUpAudio speeds up the audio file and converts it to a low-bitrate MP3
-func (f *FFMPEG) SpeedUpAudio(inputFile, outputFile string, speed float64) error {
+// FFmpeg whisper filter integration. Requires ffmpeg built with --enable-whisper (FFmpeg 8+)
+// TranscribeWithWhisperFilter runs the FFmpeg 'whisper' audio filter and returns the transcription text.
+//
+// Reference: https://ffmpeg.org/ffmpeg-filters.html#whisper-1
+func (f *FFMPEG) TranscribeWithWhisperFilter(inputFile, modelPath, language string, queue int) (string, error) {
 	if err := f.CheckFFMPEG(); err != nil {
-		return err
+		return "", err
 	}
 
-	// Use ffmpeg to speed up the audio and convert to MP3
-	// -i: input file
-	// -filter:a: apply audio filter. "atempo=x" speeds up the audio by a factor of x
-	// -ac 1: set audio channels to mono (1 channel)
-	// -ab 64k: set audio bitrate to 64 kbps
-	// -y: overwrite output file if it exists
-	cmd := exec.Command("ffmpeg", "-i", inputFile, "-filter:a", fmt.Sprintf("atempo=%.2f", speed), "-ac", "1", "-ab", "64k", "-y", outputFile)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to run ffmpeg command: %w", err)
+	// Create a temporary destination file to collect the transcription output from the filter
+	tmpFile, err := os.CreateTemp("", "ffmpeg-whisper-*.txt")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp file for transcription: %w", err)
+	}
+	destPath := tmpFile.Name()
+	tmpFile.Close()
+	defer os.Remove(destPath)
+
+	// Build the whisper filter string
+	// Example: whisper=model=/models/ggml-small.bin:language=auto:queue=15:destination=/tmp/out.txt:format=text
+	filter := fmt.Sprintf("whisper=model=%s:language=%s:queue=%d:destination=%s:format=text", modelPath, language, queue, destPath)
+
+	// Run ffmpeg to process audio only (-vn) and write null output while the filter writes to destination
+	cmd := exec.Command("ffmpeg", "-i", inputFile, "-vn", "-af", filter, "-f", "null", "-", "-y")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("failed to run ffmpeg whisper filter: %w\nffmpeg output: %s", err, string(out))
 	}
 
-	return nil
+	// Read the transcription text
+	data, err := os.ReadFile(destPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read transcription output: %w", err)
+	}
+	return string(data), nil
 }
