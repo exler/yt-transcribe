@@ -4,6 +4,7 @@
     --primary-color: #D9737B;
     --secondary-color: #F2A9A2;
     --error-color: #A64444;
+    --status-bg-color: #E6F4EA;
 }
 
 body {
@@ -31,6 +32,7 @@ a:hover {
 }
 
 input[type="text"] {
+    font-family: inherit;
     max-width: 96%;
     padding: 0.5rem;
     border: 1px solid var(--secondary-color);
@@ -100,6 +102,20 @@ p {
 
 .text-left {
     text-align: left;
+}
+
+/* Status pills */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: bold;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    background-color: var(--status-bg-color);
+    border-color: var(--secondary-color);
 }
 
 @media (max-width: 600px) {
