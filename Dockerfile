@@ -13,7 +13,6 @@ ARG BUILD_VERSION=development
 FROM golang:${GO_VERSION}-bookworm AS build_app
 ARG BUILD_VERSION
 WORKDIR /app
-RUN apt-get install -y --no-install-recommends git
 COPY . /app
 ENV GO111MODULE=on
 ENV CGO_ENABLED=0
