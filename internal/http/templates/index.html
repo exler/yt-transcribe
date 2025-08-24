@@ -1,6 +1,6 @@
 <html>
 <head>
-	<title>yt-transcript</title>
+	<title>yt-transcribe</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" type="text/css" href="/static/style.css">
 	<link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
@@ -109,50 +109,6 @@
 
 	// Refresh on an interval
 	setInterval(fetchQueueData, 5000); // Refresh every 5 seconds
-
-	async function handleSummarizeClick(videoId) {
-		const item = currentQueueData.find(v => v.VideoID === videoId);
-		if (!item || !item.Transcript) {
-			console.error('Transcript not found for video ID:', videoId);
-			const summaryCell = document.getElementById(`summary-cell-${videoId}`);
-			if (summaryCell) summaryCell.innerHTML = '<span style="color: red;">Error: Transcript data missing.</span>';
-			return;
-		}
-		const transcriptToSummarize = item.Transcript;
-
-		const summaryCell = document.getElementById(`summary-cell-${videoId}`);
-		if (summaryCell) {
-			summaryCell.innerHTML = 'Summarizing...';
-		}
-
-		try {
-			const response = await fetch('/summarize', {
-				method: 'POST',
-				headers: {
-					'X-Requested-With': 'XMLHttpRequest',
-					'Content-Type': 'application/x-www-form-urlencoded',
-				},
-				body: `text=${encodeURIComponent(transcriptToSummarize)}`
-			});
-
-			const result = await response.json(); 
-
-			if (summaryCell) {
-				if (response.ok && result.summary) {
-					summaryCell.innerHTML = escapeHTML(result.summary); 
-				} else if (result.error) {
-					summaryCell.innerHTML = `<span style="color: red;">Error: ${escapeHTML(result.error)}</span>`;
-				} else {
-					summaryCell.innerHTML = '<span style="color: red;">Error: Failed to get summary.</span>';
-				}
-			}
-		} catch (error) {
-			console.error('Summarization AJAX error:', error);
-			if (summaryCell) {
-				summaryCell.innerHTML = '<span style="color: red;">Error: Summarization request failed.</span>';
-			}
-		}
-	}
 </script>
 </body>
 </html>

@@ -5,24 +5,14 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/exler/yt-transcribe/internal/ai"
 	"github.com/exler/yt-transcribe/internal/fetch"
 	"github.com/exler/yt-transcribe/internal/queue"
 )
 
-type Server struct {
-	summarizer *ai.LLMSummarizer
-}
+type Server struct{}
 
-func NewServer(openaiAPIKey, model string) (*Server, error) {
-	if openaiAPIKey == "" {
-		return &Server{summarizer: nil}, nil
-	}
-	summarizer, err := ai.NewLLMSummarizer(openaiAPIKey, model)
-	if err != nil {
-		return nil, err
-	}
-	return &Server{summarizer: summarizer}, nil
+func NewServer() (*Server, error) {
+	return &Server{}, nil
 }
 
 func (s *Server) IndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -99,6 +89,11 @@ func (s *Server) QueueDataHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) EntryHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	videoID := r.PathValue("videoID")
 
 	var found *queue.VideoInfo
@@ -112,46 +107,6 @@ func (s *Server) EntryHandler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-
-	renderTemplate(w, "entry", pageData{
-		Title:                  found.Title,
-		VideoID:                found.VideoID,
-		Transcript:             found.Transcript,
-		Summary:                found.Summary,
-		ErrorDetail:            found.Error,
-		Status:                 found.Status,
-		QueueAddSuccessMessage: "",
-		QueueAddErrorMessage:   "",
-	})
-}
-
-func (s *Server) EntrySummarizeHandler(w http.ResponseWriter, r *http.Request) {
-	if s.summarizer == nil {
-		http.Error(w, "Summarization disabled (no API key)", http.StatusServiceUnavailable)
-		return
-	}
-	videoID := r.PathValue("videoID")
-
-	var found *queue.VideoInfo
-	for _, v := range queue.GetAll() {
-		if v.VideoID == videoID {
-			found = v
-			break
-		}
-	}
-	if found == nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	summary, err := s.summarizer.SummarizeText(r.Context(), found.Title, found.Transcript)
-	if err != nil {
-		http.Error(w, "Error summarizing transcript", http.StatusInternalServerError)
-		return
-	}
-	found.Summary = summary
-
-	queue.UpdateItem(found.VideoID, found.Status, "", found.Transcript, found.Summary)
 
 	renderTemplate(w, "entry", pageData{
 		Title:                  found.Title,

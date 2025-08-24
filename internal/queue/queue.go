@@ -17,6 +17,8 @@ const (
 	VideoStatusDownloadFailed      VideoStatus = "download_failed"
 	VideoStatusTranscribing        VideoStatus = "transcribing"
 	VideoStatusTranscriptionFailed VideoStatus = "transcription_failed"
+	VideoStatusSummarizing         VideoStatus = "summarizing"
+	VideoStatusSummaryFailed       VideoStatus = "summary_failed"
 	VideoStatusCompleted           VideoStatus = "completed"
 	VideoStatusFailed              VideoStatus = "failed"
 )

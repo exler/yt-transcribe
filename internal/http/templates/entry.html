@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>Queue Entry - {{.Title}}</title>
+    <title>{{.Title}} | yt-transcribe</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="/static/style.css">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
@@ -20,10 +20,6 @@
         <h2>Summary:</h2>
         {{if .Summary}}
         <p class="text-left">{{.Summary}}</p>
-        {{else}}
-        <form method="POST" action="/entry/{{.VideoID}}/summarize">
-            <input type="submit" value="Generate Summary">
-        </form>
         {{end}}
     </div>
 </body>

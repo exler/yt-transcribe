@@ -16,29 +16,34 @@ var runserverCmd = &cli.Command{
 	Usage: "Start HTTP server for YouTube transcription and queue management",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:    "openai-api-key",
-			Usage:   "OpenAI API key for summarization",
-			Sources: cli.EnvVars("OPENAI_API_KEY"),
+			Name:    "ollama-base-url",
+			Usage:   "Base URL for Ollama",
+			Value:   "http://localhost:11434",
+			Sources: cli.EnvVars("OLLAMA_BASE_URL"),
 		},
 		&cli.StringFlag{
-			Name:  "summarization-model",
-			Usage: "LLM model to use for summarization",
-			Value: "gpt-4.1-nano",
+			Name:    "ollama-model",
+			Usage:   "Model name to use for Ollama",
+			Value:   "phi3:mini",
+			Sources: cli.EnvVars("OLLAMA_MODEL"),
 		},
 		&cli.StringFlag{
-			Name:  "whisper-model-path",
-			Usage: "Path to ggml whisper.cpp model file (e.g. /models/ggml-small.bin)",
-			Value: "/app/models/ggml-small.bin",
+			Name:    "whisper-model-path",
+			Usage:   "Path to ggml whisper.cpp model file",
+			Value:   "models/ggml-small.bin",
+			Sources: cli.EnvVars("WHISPER_MODEL_PATH"),
 		},
 		&cli.StringFlag{
-			Name:  "language",
-			Usage: "Language code to use or 'auto' to autodetect",
-			Value: "auto",
+			Name:    "whisper-language",
+			Usage:   "Language code to use or 'auto' to autodetect",
+			Value:   "auto",
+			Sources: cli.EnvVars("WHISPER_LANGUAGE"),
 		},
 		&cli.IntFlag{
-			Name:  "queue",
-			Usage: "FFmpeg whisper filter queue size in seconds",
-			Value: 15,
+			Name:    "whisper-queue",
+			Usage:   "FFmpeg whisper filter queue size in seconds",
+			Value:   15,
+			Sources: cli.EnvVars("WHISPER_QUEUE"),
 		},
 		&cli.IntFlag{
 			Name:  "port",
@@ -47,18 +52,13 @@ var runserverCmd = &cli.Command{
 		},
 	},
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		openaiAPIKey := cmd.String("openai-api-key")
+		ollamaBaseURL := cmd.String("ollama-base-url")
+		ollamaModel := cmd.String("ollama-model")
+		whisperModelPath := cmd.String("whisper-model-path")
+		whisperLanguage := cmd.String("whisper-language")
+		whisperQueueSize := cmd.Int("whisper-queue")
 
-		summarizationModel := cmd.String("summarization-model")
-
-		modelPath := cmd.String("whisper-model-path")
-		language := cmd.String("language")
-		queueSize := cmd.Int("queue")
-
-		server, err := internalHttp.NewServer(
-			openaiAPIKey,
-			summarizationModel,
-		)
+		server, err := internalHttp.NewServer()
 		if err != nil {
 			return cli.Exit("Failed to initialize server: "+err.Error(), 1)
 		}
@@ -66,7 +66,6 @@ var runserverCmd = &cli.Command{
 		http.HandleFunc("/", server.IndexHandler)
 		http.HandleFunc("/queue", server.QueueDataHandler)
 		http.HandleFunc("/entry/{videoID}", server.EntryHandler)
-		http.HandleFunc("/entry/{videoID}/summarize", server.EntrySummarizeHandler)
 
 		staticFiles, err := fs.Sub(internalHttp.StaticFiles, "static")
 		if err != nil {
@@ -74,7 +73,7 @@ var runserverCmd = &cli.Command{
 		}
 		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFiles))))
 
-		worker, err := internalHttp.NewTranscriptionWorker(modelPath, language, queueSize)
+		worker, err := internalHttp.NewTranscriptionWorker(ollamaBaseURL, ollamaModel, whisperModelPath, whisperLanguage, whisperQueueSize)
 		if err != nil {
 			return cli.Exit("Failed to initialize transcription worker: "+err.Error(), 1)
 		}

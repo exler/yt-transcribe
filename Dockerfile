@@ -5,16 +5,19 @@ ARG GO_VERSION=1.25
 ARG FFMPEG_VERSION=8.0
 ARG YTDLP_VERSION=2025.08.22
 
+ARG BUILD_VERSION=development
+
 # ======================================
 # Build Go application
 # ======================================
 FROM golang:${GO_VERSION}-bookworm AS build_app
+ARG BUILD_VERSION
 WORKDIR /app
 RUN apt-get install -y --no-install-recommends git
 COPY . /app
 ENV GO111MODULE=on
 ENV CGO_ENABLED=0
-RUN go build -tags urfave_cli_no_docs -ldflags "-X github.com/exler/yt-transcribe/cmd.Version=$(git describe --tags)" -o /yt-transcribe
+RUN go build -tags urfave_cli_no_docs -ldflags "-X github.com/exler/yt-transcribe/cmd.Version=${BUILD_VERSION}" -o /yt-transcribe
 
 # ======================================
 # Build whisper.cpp and FFmpeg (with whisper)

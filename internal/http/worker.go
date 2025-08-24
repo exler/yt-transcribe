@@ -9,6 +9,7 @@ import (
 
 	"github.com/exler/yt-transcribe/internal/fetch"
 	"github.com/exler/yt-transcribe/internal/ffmpeg"
+	"github.com/exler/yt-transcribe/internal/ollama"
 	"github.com/exler/yt-transcribe/internal/queue"
 )
 
@@ -22,9 +23,11 @@ type TranscriptionWorker struct {
 	ffmpegTranscriptionLanguage string
 	// Maximum size that will be queued into the filter before processing the audio.
 	ffmpegQueueSize int
+
+	ollama *ollama.Ollama
 }
 
-func NewTranscriptionWorker(ffmpegWhisperModelPath, ffmpegTranscriptionLanguage string, ffmpegQueueSize int) (*TranscriptionWorker, error) {
+func NewTranscriptionWorker(ollamaBaseURL, ollamaModel, ffmpegWhisperModelPath, ffmpegTranscriptionLanguage string, ffmpegQueueSize int) (*TranscriptionWorker, error) {
 	if ffmpegWhisperModelPath == "" {
 		return nil, errors.New("whisper model path is required")
 	}
@@ -37,7 +40,13 @@ func NewTranscriptionWorker(ffmpegWhisperModelPath, ffmpegTranscriptionLanguage 
 		log.Fatalf("Failed to initialize ffmpeg: %v", err)
 	}
 
+	o, err := ollama.NewOllama(ollamaBaseURL, ollamaModel)
+	if err != nil {
+		log.Fatalf("Failed to initialize Ollama: %v", err)
+	}
+
 	return &TranscriptionWorker{
+		ollama:                      o,
 		ffmpeg:                      f,
 		ffmpegWhisperModelPath:      ffmpegWhisperModelPath,
 		ffmpegTranscriptionLanguage: ffmpegTranscriptionLanguage,
@@ -92,13 +101,24 @@ func (w *TranscriptionWorker) RunTranscriptionWorker(ctx context.Context) {
 			queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusFailed, "Failed to transcribe audio: "+err.Error(), "", "")
 			continue
 		}
+		log.Printf("Audio transcribed for %s", videoInfo.VideoID)
+
+		// Summarize transcript using Ollama
+		queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusSummarizing, "", transcriptionText, "")
+		summaryText, err := w.ollama.SummarizeText(ctx, videoInfo.Title, transcriptionText)
+		if err != nil {
+			log.Printf("Error summarizing transcript for video ID %s: %v", videoInfo.VideoID, err)
+			queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusFailed, "Failed to summarize transcript: "+err.Error(), "", "")
+			continue
+		}
+		queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusCompleted, "", transcriptionText, summaryText)
+		log.Printf("Transcript summarized for %s", videoInfo.VideoID)
 
 		// Clean up temporary files
 		if err := os.RemoveAll(tempDir); err != nil {
 			log.Printf("Error cleaning up temp directory for %s: %v", videoInfo.VideoID, err)
 		}
 
-		queue.UpdateItem(videoInfo.VideoID, queue.VideoStatusCompleted, "", transcriptionText, "")
-		log.Printf("Successfully transcribed video ID: %s, Title: %s", videoInfo.VideoID, videoInfo.Title)
+		log.Printf("Successfully processed video ID: %s, Title: %s", videoInfo.VideoID, videoInfo.Title)
 	}
 }

@@ -9,8 +9,8 @@
 
 ## Features
 
-* Transcribe YouTube audio using OpenAI's Whisper model
-* Summarize the transcription using OpenAI's LLM
+* Transcribe YouTube audio using Whisper (via FFmpeg whisper filter)
+* Summarize the transcription locally using phi3:mini via Ollama (no API key)
 * Queue multiple video transcriptions
 * Post-process audio with FFMPEG to speed up transcription to save token usage
 
