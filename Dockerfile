@@ -96,7 +96,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && update-ca-certificates
 
 # Whisper model
-RUN mkdir -p /app/models && wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin -O /app/models/ggml-small.bin
+RUN mkdir -p /app/models && wget -q -O /app/models/ggml-small.bin "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
 
 ENV LD_LIBRARY_PATH=/usr/local/lib
 ENV PATH="/usr/local/bin:/usr/bin:/bin"
