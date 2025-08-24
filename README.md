@@ -1,18 +1,17 @@
 <p align="center">
     <img src="internal/http/static/logo.webp" width="200" alt="yt-transcribe">
-    <p align="center">✍️ Transcribe YouTube videos using AI speech recognition </p>
+    <p align="center">✍️ Transcribe YouTube videos using local AI models</p>
 </p>
 
 ## Requirements
 
-* Go >= 1.24
+* Go >= 1.25
 
 ## Features
 
-* Transcribe YouTube audio using Whisper (via FFmpeg whisper filter)
-* Summarize the transcription locally using phi3:mini via Ollama (no API key)
+* Transcribe YouTube audio using a local Whisper model
+* Summarize the transcription using a local LLM (with Ollama)
 * Queue multiple video transcriptions
-* Post-process audio with FFMPEG to speed up transcription to save token usage
 
 ![Screenshot](docs/screenshot.png)
 
