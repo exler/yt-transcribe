@@ -2,8 +2,8 @@
 # Main dependencies
 # ======================================
 ARG GO_VERSION=1.25
-ARG FFMPEG_VERSION=8.0
-ARG YTDLP_VERSION=2025.08.22
+ARG FFMPEG_VERSION=8.0.1
+ARG YTDLP_VERSION=2025.12.08
 
 ARG BUILD_VERSION=development
 
@@ -44,12 +44,12 @@ WORKDIR /tmp
 # 1) Build & install whisper.cpp to /usr/local (shared + static)
 RUN git clone --depth 1 https://github.com/ggml-org/whisper.cpp.git whisper.cpp && \
     cmake -S whisper.cpp -B whisper.cpp/build \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DWHISPER_BUILD_EXAMPLES=OFF \
-      -DWHISPER_BUILD_TESTS=OFF \
-      -DWHISPER_BUILD_SHARED_LIB=ON \
-      -DWHISPER_BUILD_STATIC_LIB=ON \
-      -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DWHISPER_BUILD_EXAMPLES=OFF \
+    -DWHISPER_BUILD_TESTS=OFF \
+    -DWHISPER_BUILD_SHARED_LIB=ON \
+    -DWHISPER_BUILD_STATIC_LIB=ON \
+    -DCMAKE_INSTALL_PREFIX=/usr/local && \
     cmake --build whisper.cpp/build -j"$(nproc)" && \
     cmake --install whisper.cpp/build
 
@@ -58,11 +58,11 @@ RUN curl -sSL "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz" -o f
     tar -xf ffmpeg.tar.xz; \
     cd "ffmpeg-${FFMPEG_VERSION}"; \
     PKG_CONFIG_PATH=/usr/local/lib/pkgconfig ./configure \
-      --prefix=/usr/local \
-      --disable-debug \
-      --disable-doc \
-      --disable-ffplay \
-      --enable-whisper; \
+    --prefix=/usr/local \
+    --disable-debug \
+    --disable-doc \
+    --disable-ffplay \
+    --enable-whisper; \
     make -j"$(nproc)"; \
     make install; \
     ldconfig
