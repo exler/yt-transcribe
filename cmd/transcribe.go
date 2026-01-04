@@ -7,7 +7,7 @@ import (
 
 	"github.com/exler/yt-transcribe/internal/fetch"
 	"github.com/exler/yt-transcribe/internal/ffmpeg"
-	"github.com/exler/yt-transcribe/internal/ollama"
+	"github.com/exler/yt-transcribe/internal/llm"
 	"github.com/urfave/cli/v3"
 )
 
@@ -22,16 +22,22 @@ var (
 				Value: false,
 			},
 			&cli.StringFlag{
-				Name:    "ollama-base-url",
-				Usage:   "Base URL for Ollama",
-				Value:   "http://localhost:11434",
-				Sources: cli.EnvVars("OLLAMA_BASE_URL"),
+				Name:    "llm-endpoint",
+				Usage:   "Endpoint URL for LLM API (e.g., http://localhost:11434/v1 for Ollama, https://api.openai.com/v1 for OpenAI)",
+				Value:   "http://localhost:11434/v1",
+				Sources: cli.EnvVars("LLM_ENDPOINT"),
 			},
 			&cli.StringFlag{
-				Name:    "ollama-model",
-				Usage:   "Model name to use for Ollama",
-				Value:   "phi3:mini",
-				Sources: cli.EnvVars("OLLAMA_MODEL"),
+				Name:    "llm-token",
+				Usage:   "API token for LLM (required for OpenAI, optional for Ollama)",
+				Value:   "",
+				Sources: cli.EnvVars("LLM_TOKEN"),
+			},
+			&cli.StringFlag{
+				Name:    "llm-model",
+				Usage:   "Model name to use for LLM",
+				Value:   "",
+				Sources: cli.EnvVars("LLM_MODEL"),
 			},
 			&cli.StringFlag{
 				Name:    "whisper-model-path",
@@ -59,8 +65,9 @@ var (
 			}
 
 			summarize := cmd.Bool("summarize")
-			ollamaBaseURL := cmd.String("ollama-base-url")
-			ollamaModel := cmd.String("ollama-model")
+			llmEndpoint := cmd.String("llm-endpoint")
+			llmToken := cmd.String("llm-token")
+			llmModel := cmd.String("llm-model")
 			whisperModelPath := cmd.String("whisper-model-path")
 			whisperLanguage := cmd.String("whisper-language")
 			whisperQueueSize := cmd.Int("whisper-queue")
@@ -89,7 +96,7 @@ var (
 			}
 
 			fmt.Println("Downloading video...")
-			downloadedMetadata, err := downloader.DownloadAudio(videoURL) // Renamed variable
+			downloadedMetadata, err := downloader.DownloadAudio(videoURL)
 			if err != nil {
 				return cli.Exit(fmt.Sprintf("Failed to download audio: %v", err), 1)
 			}
@@ -106,12 +113,12 @@ var (
 			}
 
 			if summarize {
-				ollama, err := ollama.NewOllama(ollamaBaseURL, ollamaModel)
+				summarizer, err := llm.NewSummarizer(llmEndpoint, llmToken, llmModel)
 				if err != nil {
-					return cli.Exit(fmt.Sprintf("Failed to initialize Ollama: %v", err), 1)
+					return cli.Exit(fmt.Sprintf("Failed to initialize summarizer: %v", err), 1)
 				}
 
-				summary, err := ollama.SummarizeText(ctx, downloadedMetadata.Title, transcriptionText)
+				summary, err := summarizer.SummarizeText(ctx, downloadedMetadata.Title, transcriptionText)
 				if err != nil {
 					return cli.Exit(fmt.Sprintf("Failed to summarize transcription: %v", err), 1)
 				}

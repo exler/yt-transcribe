@@ -10,7 +10,7 @@
 ## Features
 
 * Transcribe YouTube audio using a local Whisper model
-* Summarize the transcription using a local LLM (with Ollama)
+* Summarize the transcription using an OpenAI-compatible API
 * Queue multiple video transcriptions
 
 ![Screenshot](docs/screenshot.png)
@@ -36,4 +36,3 @@ GLOBAL OPTIONS:
 ## License
 
 `yt-transcribe` is under the terms of the [MIT License](https://www.tldrlegal.com/l/mit), following all clarifications stated in the [license file](LICENSE).
-

@@ -6,11 +6,11 @@
 
 ## 0. Project overview
 
-yt-transcribe is a Go application utilizing FFmpeg+whisper.cpp for transcription and a local LLM (Ollama) for summarization. It serves HTML templates that interact with an async worker running in a goroutine. Key components:
+yt-transcribe is a Go application utilizing FFmpeg+whisper.cpp for transcription and, optionally, an OpenAI-compatible API for summarization. It serves HTML templates that interact with an async worker running in a goroutine. Key components:
 
 - **cmd/runserver.go**: Entry point for the web server, defines routes and starts the background worker.
 - **cmd/transcribe.go**: Entry point for the CLI transcription command.
-- **internal/ollama/**: Contains the Ollama client and summarization logic.
+- **internal/llm/**: Contains the LLM client abstraction and summarization logic using OpenAI-compatible API (works with both OpenAI and Ollama).
 - **internal/fetch/youtube.go**: Handles downloading YouTube videos and extracting audio using yt-dlp.
 - **internal/ffmpeg/**: Contains FFmpeg wrapper and transcription logic.
 - **internal/http/server.go**: Implements the HTTP server and handlers for the web interface.

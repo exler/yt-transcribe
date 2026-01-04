@@ -16,16 +16,22 @@ var runserverCmd = &cli.Command{
 	Usage: "Start HTTP server for YouTube transcription and queue management",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:    "ollama-base-url",
-			Usage:   "Base URL for Ollama",
-			Value:   "http://localhost:11434",
-			Sources: cli.EnvVars("OLLAMA_BASE_URL"),
+			Name:    "llm-endpoint",
+			Usage:   "Endpoint URL for LLM API (e.g., http://localhost:11434/v1 for Ollama, https://api.openai.com/v1 for OpenAI). Leave empty to disable summarization.",
+			Value:   "",
+			Sources: cli.EnvVars("LLM_ENDPOINT"),
 		},
 		&cli.StringFlag{
-			Name:    "ollama-model",
-			Usage:   "Model name to use for Ollama",
+			Name:    "llm-token",
+			Usage:   "API token for LLM (required for OpenAI, optional for Ollama)",
+			Value:   "",
+			Sources: cli.EnvVars("LLM_TOKEN"),
+		},
+		&cli.StringFlag{
+			Name:    "llm-model",
+			Usage:   "Model name to use for LLM",
 			Value:   "phi3:mini",
-			Sources: cli.EnvVars("OLLAMA_MODEL"),
+			Sources: cli.EnvVars("LLM_MODEL"),
 		},
 		&cli.StringFlag{
 			Name:    "whisper-model-path",
@@ -52,8 +58,9 @@ var runserverCmd = &cli.Command{
 		},
 	},
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		ollamaBaseURL := cmd.String("ollama-base-url")
-		ollamaModel := cmd.String("ollama-model")
+		llmEndpoint := cmd.String("llm-endpoint")
+		llmToken := cmd.String("llm-token")
+		llmModel := cmd.String("llm-model")
 		whisperModelPath := cmd.String("whisper-model-path")
 		whisperLanguage := cmd.String("whisper-language")
 		whisperQueueSize := cmd.Int("whisper-queue")
@@ -73,7 +80,7 @@ var runserverCmd = &cli.Command{
 		}
 		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFiles))))
 
-		worker, err := internalHttp.NewTranscriptionWorker(ollamaBaseURL, ollamaModel, whisperModelPath, whisperLanguage, whisperQueueSize)
+		worker, err := internalHttp.NewTranscriptionWorker(llmEndpoint, llmToken, llmModel, whisperModelPath, whisperLanguage, whisperQueueSize)
 		if err != nil {
 			return cli.Exit("Failed to initialize transcription worker: "+err.Error(), 1)
 		}

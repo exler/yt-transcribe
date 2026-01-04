@@ -1,29 +1,27 @@
 services:
-  ollama:
-    image: ollama/ollama:0.11.6
-    environment:
-        - OLLAMA_HOST=0.0.0.0:11434
-    ports:
-        - "11434:11434"
-    healthcheck:
-        test: ["CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/localhost/11434"]
-        interval: 10s
-        timeout: 5s
-        retries: 10
-    volumes:
-        - ollama_models:/root/.ollama
-    restart: unless-stopped
+    ollama:
+        image: ollama/ollama:0.13.5
+        environment:
+            - OLLAMA_HOST=0.0.0.0:11434
+        ports:
+            - "11434:11434"
+        healthcheck:
+            test: ["CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/localhost/11434"]
+            interval: 10s
+            timeout: 5s
+            retries: 10
+        volumes:
+            - ollama_models:/root/.ollama
+        restart: unless-stopped
 
-  app:
-    build: .
-    depends_on:
-        ollama:
-            condition: service_healthy
-    environment:
-        - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
-    ports:
-        - "8000:8000"
-    restart: unless-stopped
+    yt-transcribe:
+        build: .
+        environment:
+            - LLM_ENDPOINT=${LLM_ENDPOINT:-http://ollama:11434/v1}
+            - LLM_MODEL=${LLM_MODEL:-phi3:mini}
+        ports:
+            - "8000:8000"
+        restart: unless-stopped
 
 volumes:
     ollama_models:
