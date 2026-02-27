@@ -1,9 +1,9 @@
 # ======================================
 # Main dependencies
 # ======================================
-ARG GO_VERSION=1.25
+ARG GO_VERSION=1.26
 ARG FFMPEG_VERSION=8.0.1
-ARG YTDLP_VERSION=2025.12.08
+ARG YTDLP_VERSION=2026.02.21
 
 ARG BUILD_VERSION=development
 
@@ -80,7 +80,8 @@ RUN wget -q -O yt-dlp "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDL
 # ======================================
 # Final runtime image
 # ======================================
-FROM debian:bookworm-slim
+# Using Deno docker image as it's required for yt-dlp
+FROM denoland/deno:debian
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /app
 
